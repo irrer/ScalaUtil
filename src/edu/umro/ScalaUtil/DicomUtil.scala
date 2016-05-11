@@ -1,0 +1,203 @@
+package edu.umro.ScalaUtil
+
+import com.pixelmed.dicom.AttributeList
+import com.pixelmed.dicom.SequenceAttribute
+import com.pixelmed.dicom.AttributeTagAttribute
+import com.pixelmed.dicom.Attribute
+import com.pixelmed.dicom.DicomDictionary
+import java.util.HashSet
+import com.pixelmed.dicom.ValueRepresentation
+import com.pixelmed.dicom.SOPClassDescriptions
+import com.pixelmed.dicom.OtherWordAttribute
+import com.pixelmed.dicom.OtherFloatAttribute
+import com.pixelmed.dicom.OtherByteAttribute
+import scala.collection.mutable.ArrayBuffer
+import com.pixelmed.dicom.AttributeTag
+import com.pixelmed.dicom.TagFromName
+
+object DicomUtil {
+
+    val dictionary = new DicomDictionary
+
+    private val minorIndent = "  "
+    private val indentText = minorIndent + minorIndent
+
+    /**
+     * List of value representations that can be displayed as strings in the
+     * text version of the preview.
+     */
+    private val TEXTUAL_VR = List(
+        ValueRepresentation.AE, ValueRepresentation.AS, ValueRepresentation.CS, ValueRepresentation.DA,
+        ValueRepresentation.DS, ValueRepresentation.DT, ValueRepresentation.FL, ValueRepresentation.FD,
+        ValueRepresentation.IS, ValueRepresentation.LO, ValueRepresentation.LT, ValueRepresentation.PN,
+        ValueRepresentation.SH, ValueRepresentation.SL, ValueRepresentation.SS, ValueRepresentation.ST,
+        ValueRepresentation.TM, ValueRepresentation.UI, ValueRepresentation.UL, ValueRepresentation.US,
+        ValueRepresentation.UT, ValueRepresentation.XS, ValueRepresentation.XO);
+
+    /** A quickly searchable list of value representations. */
+    private val vrSet = new HashSet[String]
+
+    TEXTUAL_VR.map(vr => vrSet.add(new String(vr)))
+
+    /**
+     * Show a byte value as humanly readable as possible. If it is a displayable
+     * ASCII character, then show that, otherwise show the hex value (as in
+     * 0xfe).
+     *
+     * @param i
+     *
+     * @return
+     */
+    private def byteToHuman(i: Int): String = {
+        val b = i & 255;
+        if ((b >= 32) && (b <= 126)) b.asInstanceOf[Char].toString else b.formatted("0x%x")
+    }
+
+    /**
+     * Convert a single non-sequence attribute to a human readable text format.
+     *
+     * @param attribute
+     *            Attribute to format.
+     *
+     * @return String version of attribute.
+     */
+    def attributeToString(attribute: Attribute, indentLevel: String): String = {
+        val tag = attribute.getTag();
+        val line = new StringBuffer();
+        val vrDict = dictionary.getValueRepresentationFromTag(tag)
+        val vr = if (vrDict == null) attribute.getVR() else vrDict
+        val VALUE_SEPARATOR = " \\ "
+        val MAX_LINE_LENGTH = 500
+
+        def foldStringList(list: List[String], valueSeparator: String): String = list.foldLeft("")((t, v) =>
+            t.size match {
+                case 0 => v
+                case size if (size > MAX_LINE_LENGTH) => t
+                case _ => t + valueSeparator + v
+            })
+
+        def tagDetails: String = {
+            val element = tag.getElement().formatted("%04x")
+            val group = tag.getGroup().formatted("%04x")
+            val vrText: String = if (vr == null) "??" else new String(vr)
+            group + "," + element + " " + vrText
+        }
+
+        def toTextualVR: String = {
+            val classSop: String = {
+                val value = attribute.getSingleStringValueOrNull
+                if ((value != null) && (ValueRepresentation.isUniqueIdentifierVR(vr)) && (SOPClassDescriptions.getDescriptionFromUID(value).length() > 0)) { " (" + SOPClassDescriptions.getDescriptionFromUID(value) + ")" } else ""
+            }
+            val text = foldStringList(
+                (if (attribute.getStringValues == null) List("<null>")
+                else attribute.getStringValues.toList), VALUE_SEPARATOR)
+            (text + classSop)
+        }
+
+        def toAttributeTagVR(attr: AttributeTagAttribute): String = {
+            val textList = attr.getAttributeTagValues.map(t => {
+                if (dictionary.getNameFromTag(t) == null) ":<unknown>"
+                else ":" + dictionary.getNameFromTag(t)
+            })
+
+            foldStringList(textList.toList, VALUE_SEPARATOR)
+        }
+
+        def limitedCopy[A](raw: Array[A], max: Int): List[A] = {
+            if (raw.size > max) {
+                val cooked = ArrayBuffer[A]()
+                (0 until max).map(i => cooked :+ raw(i))
+                cooked.toList
+            }
+            else
+                raw.toList
+        }
+
+        def toOtherByte(attr: OtherByteAttribute): String = {
+            val data = limitedCopy(attr.getByteValues, MAX_LINE_LENGTH / 3)
+            foldStringList(data.map(d => (d.toInt & 0xff).formatted("0x%x")), " ")
+        }
+
+        def toOtherFloat(attr: OtherFloatAttribute): String = {
+            val data = limitedCopy(attr.getFloatValues, MAX_LINE_LENGTH / 3)
+            foldStringList(data.map(d => d.toString), " ")
+        }
+
+        def toOtherWord(attr: OtherWordAttribute): String = {
+            val data = limitedCopy(attr.getShortValues, MAX_LINE_LENGTH / 3)
+            foldStringList(data.map(d => ((d & 0xffff) / 256).formatted("0x%x")), " ")
+        }
+
+        def toSequenceAttribute(attr: SequenceAttribute): String = {
+            val size = attr.getNumberOfItems
+            val textList = (0 until size).map(i => {
+                (if (i == 0) "\n" else "") +
+                    indentLevel + minorIndent + "Item " + (i + 1) + " / " + size +
+                    "\n" + attributeListToString(attr.getItem(i).getAttributeList, indentLevel + indentText)
+            })
+            val text = textList.foldLeft("")((t, a) => t + a)
+            if (text.endsWith("\n")) text.subSequence(0, text.size - 1).toString else text
+        }
+
+        val valueText: String =
+            if (attribute.isInstanceOf[SequenceAttribute]) {
+                toSequenceAttribute(attribute.asInstanceOf[SequenceAttribute])
+            }
+            else {
+                attribute match {
+                    case _ if (vr != null) && vrSet.contains(new String(vr)) => toTextualVR
+                    case attr: AttributeTagAttribute => toAttributeTagVR(attr)
+                    case attr: OtherByteAttribute => toOtherByte(attr)
+                    case attr: OtherFloatAttribute => toOtherFloat(attr)
+                    case attr: OtherWordAttribute => toOtherWord(attr)
+                    case attr: SequenceAttribute => toSequenceAttribute(attr)
+                    case _ => "unknown"
+                }
+            }.replace('\n', ' ').replace('\0', ' ').replace('\r', ' ') // remove funky characters
+
+        val tagName = if (dictionary.getNameFromTag(tag) == null) "<unknown>" else dictionary.getNameFromTag(tag)
+
+        indentLevel + tagDetails + "  " + tagName + ": " + valueText
+    }
+
+    private def attributeListToString(attributeList: AttributeList, indent: String): String = {
+        attributeList.keySet.toArray.toList.map(tag => {
+            val t = tag
+            val obj = tag.asInstanceOf[Object]
+            val a = attributeList.get(t).asInstanceOf[Attribute]
+            attributeToString(a, indent)
+        }).foldLeft("")((t, a) => t + a + "\n")
+    }
+
+    def attributeListToString(attributeList: AttributeList): String = attributeListToString(attributeList, "")
+
+    /**
+     * Recursively search the given attribute list for all instances of the given tag.
+     */
+    def findAll(attributeList: AttributeList, tag: AttributeTag): List[Attribute] = {
+        def tagOfList(al: AttributeList): Array[Attribute] = if (al.get(tag) == null) Array[Attribute]() else Array(al.get(tag))
+
+        def childLists(al: AttributeList): Array[AttributeList] = {
+            val seqAList = al.values.toArray.filter(a => a.isInstanceOf[SequenceAttribute]).map(sa => sa.asInstanceOf[SequenceAttribute])
+            seqAList.map(sa => (0 until sa.getNumberOfItems).map(i => sa.getItem(i).getAttributeList)).flatten
+        }
+
+        def find(al: AttributeList): Array[Attribute] = childLists(al).map(c => find(c)).foldLeft(tagOfList(al))(_ ++ _)
+
+        find(attributeList).toList
+    }
+
+    /**
+     * Self test.
+     */
+    def main(args: Array[String]): Unit = {
+        val attributeList = new AttributeList
+        //attributeList.read("D:\\pf\\Conquest\\dicomserver1417\\data\\10702148\\1.2.840.113704.1.111.5972.1397220047.13_0003_000196_1398105876018e.dcm")
+        //attributeList.read("D:\\tmp\\mobius\\dicom\\mobytest25.2\\mobytest25.2_RTPLAN_8191.DCM")
+        attributeList.read("""D:\tmp\osms\two-machines\1.2.246.352.71.5.824327626427.391401.20160302105200.dcm""")
+        //println(attributeListToString(attributeList))
+
+        findAll(attributeList, TagFromName.TreatmentMachineName).map(a => println("    " + a))
+    }
+
+}
