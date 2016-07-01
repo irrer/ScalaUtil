@@ -45,11 +45,23 @@ object TongEdit {
     
     private val baseDir = new File("""W:\For_Jim\extra\S""")
     private val newBaseDir = new File("""W:\For_Jim\extra\S_New""")
-    */
     
     private val baseDir = new File("""W:\For_Jim\extra\W""")
     private val newBaseDir = new File("""W:\For_Jim\extra\W_New""")
     
+    private val baseDir = new File("""M:\LowGrade_3T\MRIpreTreatmentPlanning\51_HEKMATI_ALI\20121019_PreRT\Tract_to_T1""")
+    private val newBaseDir = new File("""M:\LowGrade_3T\MRIpreTreatmentPlanning\51_HEKMATI_ALI\20121019_PreRT\Tract_to_T1_New""")
+
+    private val baseDir = new File("""M:\LowGrade_3T\MRIpreTreatmentPlanning\56_DONNER_TESS\20130509_preRT\Tract_to_T1""")
+    private val newBaseDir = new File("""M:\LowGrade_3T\MRIpreTreatmentPlanning\56_DONNER_TESS\20130509_preRT\Tract_to_T1_New""")
+
+    private val baseDir = new File("""M:\LowGrade_3T\MRIpreTreatmentPlanning\68_GUSTAFSON_ERIK\20140429_preRT\Tract_to_T1""")
+    private val newBaseDir = new File("""M:\LowGrade_3T\MRIpreTreatmentPlanning\68_GUSTAFSON_ERIK\20140429_preRT\Tract_to_T1_New""")        
+    */
+
+    private val baseDir = new File("""M:\LowGrade_3T\MRIpreTreatmentPlanning\68_GUSTAFSON_ERIK\20140429_preRT\Tract_to_T1""")
+    private val newBaseDir = new File("""M:\LowGrade_3T\MRIpreTreatmentPlanning\68_GUSTAFSON_ERIK\20140429_preRT\Tract_to_T1_New""")
+
     private def makeUidAttr(tag: AttributeTag): Attribute = {
         val attr = AttributeFactory.newAttribute(tag)
         attr.addValue(UMROGUID.getUID)

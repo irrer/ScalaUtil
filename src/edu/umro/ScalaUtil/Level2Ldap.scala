@@ -57,7 +57,7 @@ object Level2Ldap {
         try {
             val dc = new InitialDirContext(environment)
             if (dc == null)
-                Left("Faile to connect to LDAP server " + ldapUrl)
+                Left("Failed to connect to LDAP server " + ldapUrl)
             else
                 Right(dc)
         }
