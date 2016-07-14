@@ -123,8 +123,8 @@ object Level2Ldap {
         val environment = basicProperties
 
         environment.put(Context.SECURITY_AUTHENTICATION, "simple")
-        val securityPricipal = umichMedQuery(userId)
-        environment.put(Context.SECURITY_PRINCIPAL, securityPricipal)
+        val securityPrincipal = umichMedQuery(userId)
+        environment.put(Context.SECURITY_PRINCIPAL, securityPrincipal)
         // Note: If the following SECURITY_CREDENTIALS property is not set, then
         // it does not password authenticate.
         environment.put(Context.SECURITY_CREDENTIALS, secret)
@@ -210,7 +210,7 @@ object Level2Ldap {
         println("LDAP health status: " + msg)
 
         val userId = System.getProperty("user.name")
-        print("Enter Level 2 password for " + userId + " : ")
+        print("Enter Level 2 password for " + userId + " (and make sure no one is watching) : ")
         val secret = scala.io.StdIn.readLine
 
         println("authentication for user " + userId + " : " + Level2Ldap.userIsAuthenticated(userId, secret))
