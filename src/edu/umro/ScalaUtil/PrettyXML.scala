@@ -11,7 +11,7 @@ import java.io.FileOutputStream
  */
 object PrettyXML {
 
-    private def xmlToText(document: Elem): String = new PrettyPrinter(1024, 2).format(document)
+    def xmlToText(document: Elem): String = new PrettyPrinter(1024, 2).format(document)
 
     private def makePretty(fileName: String): Unit = {
         try {
