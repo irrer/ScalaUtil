@@ -1,7 +1,7 @@
 package edu.umro.ScalaUtil
 
 import scala.xml.PrettyPrinter
-import scala.xml.Elem
+import scala.xml.Node
 import java.io.File
 import scala.xml.XML
 import java.io.FileOutputStream
@@ -11,7 +11,7 @@ import java.io.FileOutputStream
  */
 object PrettyXML {
 
-    def xmlToText(document: Elem): String = new PrettyPrinter(1024, 2).format(document)
+    def xmlToText(node: Node): String = new PrettyPrinter(1024, 2).format(node)
 
     private def makePretty(fileName: String): Unit = {
         try {
