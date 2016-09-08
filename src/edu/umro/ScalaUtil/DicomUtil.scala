@@ -188,16 +188,34 @@ object DicomUtil {
     }
 
     /**
+     * Represent the components of a person name (Value Representation PN) in DICOM format.
+     *
+     *  Smith^John^Q --> John Q Smith
+     */
+    case class DicomPersonName(familyNameComplex: Option[String], givenNameComplex: Option[String], middleName: Option[String], namePrefix: Option[String], nameSuffix: Option[String]) {
+        def partToStr(part: Option[String]): String = if (part.isDefined) { part.get + " " } else ""
+        override def toString: String = (partToStr(namePrefix) + partToStr(givenNameComplex) + partToStr(middleName) + partToStr(familyNameComplex) + partToStr(nameSuffix)).replaceAll("  *", " ").trim
+    }
+
+    /**
+     * Given a person name (Value Representation PN) in DICOM format, break it down into its components.
+     */
+    def parseDicomPersonName(text: String): DicomPersonName = {
+        val pn = text.split("\\^")
+        def getPn(i: Int): Option[String] = if (pn.size > i) Some(pn(i)) else None
+
+        new DicomPersonName(getPn(0), getPn(1), getPn(2), getPn(3), getPn(4))
+    }
+
+    /**
      * Self test.
      */
     def main(args: Array[String]): Unit = {
-        val attributeList = new AttributeList
-        //attributeList.read("D:\\pf\\Conquest\\dicomserver1417\\data\\10702148\\1.2.840.113704.1.111.5972.1397220047.13_0003_000196_1398105876018e.dcm")
-        //attributeList.read("D:\\tmp\\mobius\\dicom\\mobytest25.2\\mobytest25.2_RTPLAN_8191.DCM")
-        attributeList.read("""D:\tmp\osms\two-machines\1.2.246.352.71.5.824327626427.391401.20160302105200.dcm""")
-        //println(attributeListToString(attributeList))
-
-        findAll(attributeList, TagFromName.TreatmentMachineName).map(a => println("    " + a))
+        
+        val name = "Smith^John    ^Q"
+        println("DICOM name: " + name)
+        val dpn = parseDicomPersonName(name)
+        println("dpn: " + dpn)
     }
 
 }
