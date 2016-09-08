@@ -15,7 +15,7 @@ object Trace {
         val line = se.getLineNumber
         val method = se.getMethodName
         val threadName = Thread.currentThread.getName
-        "Trace " + dateFormat.format(new Date) + " | " + threadName + " | " + se.getFileName + " : " + se.getMethodName + " : " + se.getLineNumber
+        "Trace " + dateFormat.format(new Date) + " | " + threadName + " | (" + se.getFileName + ":" + se.getLineNumber + ") " + se.getMethodName
     }
 
     /** Print current line. */
