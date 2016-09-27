@@ -208,10 +208,97 @@ object DicomUtil {
     }
 
     /**
+     * Compare two DICOM files for the purpose of sorting them in the order that humans expect.
+     */
+    def compareDicom(a: AttributeList, b: AttributeList): Int = {
+
+        def nullAttrCheck(tag: AttributeTag): Either[Int, (Attribute, Attribute)] = {
+
+            (a.get(tag), b.get(tag)) match {
+                case (null, null) => Left(0)
+                case (null, _) => Left(-1)
+                case (_, null) => Left(1)
+                case (aAttr, bAttr) => Right(aAttr, bAttr)
+            }
+        }
+
+        def compareString(tag: AttributeTag)(dummy: Any): Int = {
+
+            def comprVal(aAttr: Attribute, bAttr: Attribute): Int = {
+                (aAttr.getSingleStringValueOrNull, bAttr.getSingleStringValueOrNull) match {
+                    case (null, null) => 0
+                    case (null, _) => -1
+                    case (_, null) => 1
+                    case (aVal, bVal) => aVal.compareTo(bVal)
+                }
+            }
+
+            nullAttrCheck(tag) match {
+                case Left(c) => c
+                case Right((aAttr, bAttr)) => comprVal(aAttr, bAttr)
+            }
+
+        }
+
+        def compareDouble(tag: AttributeTag, index: Int)(dummy: Any): Int = {
+
+            def comprVal(aAttr: Attribute, bAttr: Attribute): Int = {
+                (aAttr.getDoubleValues, bAttr.getDoubleValues) match {
+                    case (null, null) => 0
+                    case (null, _) => -1
+                    case (_, null) => 1
+                    case (aVal, _) if (aVal.size <= index) => -1
+                    case (_, bVal) if (bVal.size <= index) => 1
+                    case (aVal, bVal) => aVal(index).compareTo(bVal(index))
+                }
+            }
+
+            nullAttrCheck(tag) match {
+                case Left(c) => c
+                case Right((aAttr, bAttr)) => comprVal(aAttr, bAttr)
+            }
+
+        }
+
+        lazy val seq: Seq[(Any) => Int] = Seq(
+            compareDouble(TagFromName.SliceLocation, 0),
+            compareDouble(TagFromName.ImagePositionPatient, 0),
+            compareDouble(TagFromName.ImagePositionPatient, 1),
+            compareDouble(TagFromName.ImagePositionPatient, 2),
+            compareDouble(TagFromName.InstanceNumber, 0),
+            compareString(TagFromName.InstanceCreationDate),
+            compareString(TagFromName.InstanceCreationTime),
+            compareString(TagFromName.InstanceCreationTime),
+            compareString(TagFromName.AcquisitionDate),
+            compareString(TagFromName.AcquisitionTime),
+            compareString(TagFromName.ContentDate),
+            compareString(TagFromName.ContentTime),
+            compareString(TagFromName.RTPlanDate),
+            compareString(TagFromName.RTPlanTime),
+            compareString(TagFromName.StructureSetDate),
+            compareString(TagFromName.StructureSetTime),
+            compareString(TagFromName.SOPInstanceUID))
+
+        val result = seq.view.map(func => func(0)).find(v => v != 0)
+
+        if (result.isDefined) result.get else 0
+    }
+
+    /**
      * Self test.
      */
     def main(args: Array[String]): Unit = {
-        
+
+        val a = new AttributeList
+        a.read("""D:\tmp\mrct2\input\Vessel\1.3.6.1.4.1.22361.48658618118952.1460113624.1461353992992.986.dcm""")
+        val b = new AttributeList
+        b.read("""D:\tmp\mrct2\input\Vessel\1.3.6.1.4.1.22361.48658618118952.1460113624.1461353992992.988.dcm""")
+
+        println("compareDicom(a,b): " + compareDicom(a, b))
+        println("compareDicom(b,a): " + compareDicom(b, a))
+        println("compareDicom(a,a): " + compareDicom(a, a))
+        System.exit(99)
+
         val name = "Smith^John    ^Q"
         println("DICOM name: " + name)
         val dpn = parseDicomPersonName(name)

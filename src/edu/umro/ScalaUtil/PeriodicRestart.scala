@@ -51,7 +51,7 @@ class PeriodicRestart(restartTime: Long) extends Runnable {
      *
      * @return Time in milliseconds until next restart time.
      */
-    private def waitTime: Long = {
+    def waitTime: Long = {
         val oneDay: Long = 24 * 60 * 60 * 1000 // The length of one day in milliseconds        
         val now = new GregorianCalendar
 
