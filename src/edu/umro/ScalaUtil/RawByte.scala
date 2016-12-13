@@ -29,6 +29,14 @@ object RawByte {
     def revBits(in: Seq[Byte]): Seq[Byte] = in.map(b => revBits(b))
 
     /**
+     * Change the ordering of each set of 2 bytes in a byte stream.
+     */
+    def swapBytePairs(in: Seq[Byte]): Seq[Byte] = {
+        if ((in.size % 2) != 0) throw new InvalidParameterException("swapBytePairs: Size of input bytes must be a multiple of 2")
+        (0 until in.size).map(i => if ((i % 2) == 0) in(i + 1) else in(i - 1))
+    }
+
+    /**
      * Change the ordering of each set of 4 bytes in a byte stream.
      *
      * @param in: Data to be operated on. The size must be a multiple of 4.
@@ -38,18 +46,13 @@ object RawByte {
      *     0, 1, 2, 3 : do not change order
      *
      *     2, 3, 0, 1 : swap the first and last 16 bits.
-     *
-     * @param rev: If true, reverse the order of the bits in each byte.
      */
-    def swapBytes4(in: Seq[Byte], ordering: Seq[Int], rev: Boolean): Seq[Byte] = {
+    def swapBytes4(in: Seq[Byte], ordering: Seq[Int]): Seq[Byte] = {
 
         if ((in.size % 4) != 0) throw new InvalidParameterException("swapBytes4: Size of input bytes must be a multiple of 4")
         if (ordering.size != 4) throw new InvalidParameterException("swapBytes4: Size of ordering list must be exactly 4")
 
-        val out = {
-            if (rev) revBits(in).toArray
-            else Array.ofDim[Byte](in.size)
-        }
+        val out = Array.ofDim[Byte](in.size)
 
         def swap(fi: Int): Unit = {
             def valof(i: Int): Byte = in(fi + i)
