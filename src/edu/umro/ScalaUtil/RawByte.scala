@@ -21,7 +21,7 @@ object RawByte {
     /**
      * Reverse the bits of a byte.
      */
-    def revBits(in: Byte): Byte = revBitTable(in & 255).toByte
+    private def revBits(in: Byte): Byte = revBitTable(in & 255).toByte
 
     /**
      * Reverse the bits of each byte.
@@ -85,10 +85,13 @@ object RawByte {
      */
     def main(args: Array[String]): Unit = {
 
-        println("byteToBitString    5: " + byteToBitString(5.toByte))
-        println("byteToBitString 0xc0: " + byteToBitString(0xc0.toByte))
-        println("byteToBitString   15: " + byteToBitString(15.toByte))
-        println("byteToBitString  255: " + byteToBitString(255.toByte))
+        if (true) {
+            println("byteToBitString    5: " + byteToBitString(5.toByte))
+            println("byteToBitString 0xc0: " + byteToBitString(0xc0.toByte))
+            println("byteToBitString   15: " + byteToBitString(15.toByte))
+            println("byteToBitString  255: " + byteToBitString(255.toByte))
+        }
+
         if (true) {
             val testList: List[(Byte, Byte)] =
                 List(
