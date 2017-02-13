@@ -21,9 +21,11 @@ object PrettyXML {
             val fos = new FileOutputStream(file)
             fos.write(text.getBytes)
             fos.close
+            System.exit(0)
         }
         catch {
             case t: Throwable => println("Unable to process file " + fileName + " : " + t.getMessage)
+            System.exit(1)
         }
 
     }
