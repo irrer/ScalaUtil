@@ -23,7 +23,7 @@ public class ReadModifyWrite {
         // Substitute the attributes and values of your choice
         Attribute attr = AttributeFactory.newAttribute(TagFromName.PhysicianOfRecord);
         attr.addValue("John Smith");
-        
+        //short[] shorts = al.get(TagFromName.PixelData).getShortValues();
         al.put(attr);
         String transferSyntax = al.get(TagFromName.TransferSyntaxUID).getSingleStringValueOrDefault(TransferSyntax.ExplicitVRLittleEndian);
         al.write(new File("NewDICOM.dcm"), transferSyntax, true, true);
