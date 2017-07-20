@@ -31,12 +31,10 @@ import com.pixelmed.dicom.StoredFilePathStrategy
 import com.pixelmed.network.MoveSOPClassSCU
 import com.pixelmed.network.DicomNetworkException
 
-
 /**
  * Support for copying files from Varian to the local file system.
  */
 class DicomReceiver(mainDir: File, myPacs: PACS) extends ReceivedObjectHandler {
-    private val DEBUG_LEVEL = 0
 
     /** Name of sub-directory to put incoming DICOM files in. */
     private var subDir: String = "init"
@@ -61,8 +59,7 @@ class DicomReceiver(mainDir: File, myPacs: PACS) extends ReceivedObjectHandler {
             myPacs.aeTitle, // our AETitle
             mainDir, // directory for temporary and fetched files
             new StoredFilePathStrategyJobFolders, // strategy for naming incoming DICOM files
-            this, // ReceivedObjectHandler receivedObjectHandler,
-            DEBUG_LEVEL) // debug level
+            this) // ReceivedObjectHandler receivedObjectHandler,
     }
 
     private def getPresentationContext: LinkedList[PresentationContext] = {
@@ -71,8 +68,11 @@ class DicomReceiver(mainDir: File, myPacs: PACS) extends ReceivedObjectHandler {
         val tslist = new LinkedList[String]
         tslist.add(TransferSyntax.ExplicitVRLittleEndian);
         tslist.add(TransferSyntax.ImplicitVRLittleEndian);
-        presentationContextList.add(new PresentationContext(1.toByte, SOPClass.PatientRootQueryRetrieveInformationModelFind, tslist));
+        //        presentationContextList.add(new PresentationContext(1.toByte, SOPClass.PatientRootQueryRetrieveInformationModelFind, tslist));
         presentationContextList.add(new PresentationContext(3.toByte, SOPClass.PatientRootQueryRetrieveInformationModelMove, tslist));
+
+        //        presentationContextList.add(new PresentationContext(1.toByte, SOPClass.StudyRootQueryRetrieveInformationModelFind, tslist));
+        //        presentationContextList.add(new PresentationContext(3.toByte, SOPClass.StudyRootQueryRetrieveInformationModelMove, tslist));
 
         return presentationContextList;
     }
@@ -92,7 +92,10 @@ class DicomReceiver(mainDir: File, myPacs: PACS) extends ReceivedObjectHandler {
             throw new RuntimeException("No QueryRetrieveLevel specified")
         }
 
-        Log.get.info("Starting C-MOVE of files from " + srcPacs.aeTitle + " to " + dstPacs.aeTitle + " with specification of " + specAsString);
+        //val affectedSOPClass = SOPClass.StudyRootQueryRetrieveInformationModelMove
+        val affectedSOPClass = SOPClass.PatientRootQueryRetrieveInformationModelMove
+
+        Log.get.info("Starting C-MOVE of files from " + srcPacs.aeTitle + " to " + dstPacs.aeTitle + " with specification of \n" + specAsString);
         try {
             val moveSOPClassSCU = new MoveSOPClassSCU(
                 srcPacs.host, // source host
@@ -100,9 +103,8 @@ class DicomReceiver(mainDir: File, myPacs: PACS) extends ReceivedObjectHandler {
                 srcPacs.aeTitle, // source aeTitle
                 myPacs.aeTitle, // callingAETitle aeTitle
                 dstPacs.aeTitle, // moveDestination
-                SOPClass.StudyRootQueryRetrieveInformationModelMove, // SOPClass.PatientRootQueryRetrieveInformationModelMove,    //   affectedSOPClass
-                specification, // identifier
-                DEBUG_LEVEL)
+                affectedSOPClass, //  affectedSOPClass
+                specification) // identifier
             true
         }
         catch {
@@ -123,7 +125,7 @@ class DicomReceiver(mainDir: File, myPacs: PACS) extends ReceivedObjectHandler {
     startReceiver
 }
 
-object TestDicomReceiver {
+object DicomReceiver {
 
     def buildDicomSpecifier: AttributeList = {
         val al = new AttributeList
@@ -144,6 +146,41 @@ object TestDicomReceiver {
         //addAttr(TagFromName.PatientID, "Mobius1_3_1")
 
         al
+    }
+
+    def main(args: Array[String]): Unit = {
+
+        val spec = new AttributeList
+        def addAttr(tag: AttributeTag, value: String): Unit = {
+            val a = AttributeFactory.newAttribute(tag)
+            a.addValue(value)
+            spec.put(a)
+        }
+        // addAttr(TagFromName.QueryRetrieveLevel, "SERIES") //  TODO is this right?
+        addAttr(TagFromName.QueryRetrieveLevel, "IMAGE") // TODO WLQA does it this way
+        addAttr(TagFromName.SeriesInstanceUID, "1.3.12.2.1107.5.2.19.45228.201307081513214157314794.0.0.0")
+
+        val mainDir = new File("""D:\tmp\archive_migration_from_xstor_to_velocity\""")
+        val subDir = new File(mainDir, "test_cmove")
+        val subDirName = subDir.getName
+        println("Putting files into " + subDir.getAbsolutePath)
+        Utility.deleteFileTree(subDir)
+        subDir.mkdirs
+
+        val cpXstorPacs = new PACS("CP_XSTOR_IRRER", "141.214.125.209", 15656)
+        val irrerPacs = new PACS("IRRER", "141.214.125.209", 15678)
+        val remotePacs = new PACS("UMRO_ARCHIVE", "10.30.3.69", 104)
+
+        val localPacs = cpXstorPacs
+
+        println("localPacs: " + localPacs)
+        println("remotePacs: " + remotePacs)
+
+        val dicomReceiver = new DicomReceiver(mainDir, localPacs)
+
+        val success = dicomReceiver.cmove(subDirName, spec, remotePacs, localPacs)
+
+        println(if (success) "success" else "fail")
     }
 
 }
