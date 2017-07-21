@@ -30,6 +30,7 @@ import com.pixelmed.dicom.AttributeFactory
 import com.pixelmed.dicom.StoredFilePathStrategy
 import com.pixelmed.network.MoveSOPClassSCU
 import com.pixelmed.network.DicomNetworkException
+import java.util.HashSet
 
 /**
  * Support for copying files from Varian to the local file system.
@@ -48,8 +49,16 @@ class DicomReceiver(mainDir: File, myPacs: PACS) extends ReceivedObjectHandler {
         }
     }
 
+    var total = 0 // TODO rm
+    val hist = new java.util.HashSet[String]() // TODO rm
     override def sendReceivedObjectIndication(fileName: String, transferSyntax: String, callingAETitle: String): Unit = {
-        Log.get.info("Received from " + callingAETitle + " file " + " DICOM file " + fileName)
+        total = total + 1
+        if (hist.contains(fileName)) {
+            println("repeating " + fileName)
+            System.exit(99)
+        }
+        hist.add(fileName)
+        Log.get.info("Received from " + callingAETitle + " file " + " DICOM file " + fileName + "    total: " + total)
     }
 
     private def dispatcher = {
@@ -66,8 +75,8 @@ class DicomReceiver(mainDir: File, myPacs: PACS) extends ReceivedObjectHandler {
         val presentationContextList = new LinkedList[PresentationContext]
 
         val tslist = new LinkedList[String]
-        tslist.add(TransferSyntax.ExplicitVRLittleEndian);
-        tslist.add(TransferSyntax.ImplicitVRLittleEndian);
+        // tslist.add(TransferSyntax.ExplicitVRLittleEndian) // TODO keep?
+        tslist.add(TransferSyntax.ImplicitVRLittleEndian) // TODO keep?
         //        presentationContextList.add(new PresentationContext(1.toByte, SOPClass.PatientRootQueryRetrieveInformationModelFind, tslist));
         presentationContextList.add(new PresentationContext(3.toByte, SOPClass.PatientRootQueryRetrieveInformationModelMove, tslist));
 
@@ -156,9 +165,12 @@ object DicomReceiver {
             a.addValue(value)
             spec.put(a)
         }
-        // addAttr(TagFromName.QueryRetrieveLevel, "SERIES") //  TODO is this right?
-        addAttr(TagFromName.QueryRetrieveLevel, "IMAGE") // TODO WLQA does it this way
-        addAttr(TagFromName.SeriesInstanceUID, "1.3.12.2.1107.5.2.19.45228.201307081513214157314794.0.0.0")
+        addAttr(TagFromName.QueryRetrieveLevel, "SERIES") //  TODO is this right?
+        // addAttr(TagFromName.QueryRetrieveLevel, "IMAGE") // TODO WLQA does it this way
+        //addAttr(TagFromName.SeriesInstanceUID, "1.3.12.2.1107.5.2.19.45228.201307081513214157314794.0.0.0")   // patient ID 0000024
+        addAttr(TagFromName.SeriesInstanceUID, "1.3.6.1.4.1.22361.48658618118952.539916499.1500572921197.3") // patient ID COMPARE_TEST
+
+        //addAttr(TagFromName.PatientID, "COMPARE_TEST")
 
         val mainDir = new File("""D:\tmp\archive_migration_from_xstor_to_velocity\""")
         val subDir = new File(mainDir, "test_cmove")
