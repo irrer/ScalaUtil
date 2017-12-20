@@ -1,7 +1,6 @@
 package edu.umro.ScalaUtil
 
 import java.util.GregorianCalendar
-import edu.umro.util.Log
 import java.util.Calendar
 import java.util.Date
 import java.text.SimpleDateFormat
@@ -13,7 +12,7 @@ import java.text.ParseException
  *
  * @author Jim Irrer
  */
-class PeriodicRestart(restartTime: Long) extends Runnable {
+class PeriodicRestart(restartTime: Long) extends Runnable with Logging {
 
     def this(restartTimeText: String) = this(PeriodicRestart.timeOfDayToMs(restartTimeText))
 
@@ -32,9 +31,8 @@ class PeriodicRestart(restartTime: Long) extends Runnable {
         while (finish > now) {
             try {
                 Thread.sleep(remaining);
-            }
-            catch {
-                case e: InterruptedException => Log.get.info("Unexpected exception while sleeping in PeriodicRestart: " + Log.fmtEx(e))
+            } catch {
+                case e: InterruptedException => logger.info("Unexpected exception while sleeping in PeriodicRestart: " + fmtEx(e))
             }
         }
     }
@@ -52,7 +50,7 @@ class PeriodicRestart(restartTime: Long) extends Runnable {
      * @return Time in milliseconds until next restart time.
      */
     def waitTime: Long = {
-        val oneDay: Long = 24 * 60 * 60 * 1000 // The length of one day in milliseconds        
+        val oneDay: Long = 24 * 60 * 60 * 1000 // The length of one day in milliseconds
         val now = new GregorianCalendar
 
         val restart = new GregorianCalendar
@@ -68,7 +66,7 @@ class PeriodicRestart(restartTime: Long) extends Runnable {
         val interval = (stop.getTimeInMillis - now.getTimeInMillis + oneDay) % oneDay
 
         val stopDesc = new Date(if (stop.getTimeInMillis <= now.getTimeInMillis) stop.getTimeInMillis + oneDay else stop.getTimeInMillis).toString
-        Log.get.info("Service restart time" + stopDesc + "    Wait time before restarting: " + getIntervalDescription(interval))
+        logger.info("Service restart time" + stopDesc + "    Wait time before restarting: " + getIntervalDescription(interval))
         interval
     }
 
@@ -79,7 +77,7 @@ class PeriodicRestart(restartTime: Long) extends Runnable {
      */
     def run: Unit = {
         sleep(waitTime)
-        Log.get.info("Intentionally terminating service to initiate YAJSW restart.")
+        logger.info("Intentionally terminating service to initiate YAJSW restart.")
         System.exit(1)
     }
 
@@ -87,7 +85,7 @@ class PeriodicRestart(restartTime: Long) extends Runnable {
 
 }
 
-object PeriodicRestart {
+object PeriodicRestart extends Logging {
 
     /** If the timeOfDayText to <code>timeOfDayToMs</code> is badly formatted, then default to this. */
     val DEFAULT_RESTART_TIME_TEXT = "2:22"
@@ -104,10 +102,9 @@ object PeriodicRestart {
         val dateFormat = new SimpleDateFormat("HH:mm")
         val millisec = try {
             dateFormat.parse(timeOfDayText).getTime
-        }
-        catch {
+        } catch {
             case e: ParseException => {
-                Log.get.warning("Badly formatted time of day text: " + timeOfDayText + " .  Should be HH:MM, as in 1:23 .  Assuming default of " + DEFAULT_RESTART_TIME_TEXT)
+                logger.warn("Badly formatted time of day text: " + timeOfDayText + " .  Should be HH:MM, as in 1:23 .  Assuming default of " + DEFAULT_RESTART_TIME_TEXT)
                 dateFormat.parse(DEFAULT_RESTART_TIME_TEXT).getTime
             }
         }

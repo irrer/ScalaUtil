@@ -8,7 +8,6 @@ import com.pixelmed.network.ReceivedObjectHandler
 import com.pixelmed.dicom.DicomDictionary
 import com.pixelmed.dicom.StoredFilePathStrategy
 import com.pixelmed.dicom.StoredFilePathStrategySingleFolder
-import edu.umro.util.Log
 import com.pixelmed.network.StorageSOPClassSCPDispatcher
 import com.pixelmed.network.Association
 import com.pixelmed.network.AssociationFactory
@@ -35,7 +34,9 @@ import java.util.HashSet
 /**
  * Support for copying files from Varian to the local file system.
  */
-class DicomReceiver(mainDir: File, myPacs: PACS) extends ReceivedObjectHandler {
+class DicomReceiver(mainDir: File, myPacs: PACS, receivedObjectHandler: ReceivedObjectHandler) extends Logging {
+
+    def this(mainDir: File, myPacs: PACS) = this(mainDir, myPacs, new DicomReceiver.DefaultReceivedObjectHandler)
 
     lazy val mainDirName = mainDir.getAbsolutePath
 
@@ -66,10 +67,6 @@ class DicomReceiver(mainDir: File, myPacs: PACS) extends ReceivedObjectHandler {
         }
     }
 
-    override def sendReceivedObjectIndication(fileName: String, transferSyntax: String, callingAETitle: String): Unit = {
-        Log.get.info("Received from " + callingAETitle + " file " + " DICOM file " + fileName)
-    }
-
     private def dispatcher = {
         println("Starting dispatcher with PACS " + myPacs)
         new StorageSOPClassSCPDispatcher(
@@ -77,7 +74,7 @@ class DicomReceiver(mainDir: File, myPacs: PACS) extends ReceivedObjectHandler {
             myPacs.aeTitle, // our AETitle
             mainDir, // directory for temporary and fetched files
             new StoredFilePathStrategyJobFolders, // strategy for naming incoming DICOM files
-            this) // ReceivedObjectHandler receivedObjectHandler,
+            receivedObjectHandler)
     }
 
     private def getPresentationContext: LinkedList[PresentationContext] = {
@@ -108,7 +105,7 @@ class DicomReceiver(mainDir: File, myPacs: PACS) extends ReceivedObjectHandler {
             //val affectedSOPClass = SOPClass.StudyRootQueryRetrieveInformationModelMove
             val affectedSOPClass = SOPClass.PatientRootQueryRetrieveInformationModelMove
 
-            Log.get.info("Starting C-MOVE of files from " + srcPacs.aeTitle + " to " + dstPacs.aeTitle + " with specification of \n" + specAsString);
+            logger.info("Starting C-MOVE of files from " + srcPacs.aeTitle + " to " + dstPacs.aeTitle + " with specification of \n" + specAsString);
             try {
                 val moveSOPClassSCU = new MoveSOPClassSCU(
                     srcPacs.host, // source host
@@ -119,27 +116,32 @@ class DicomReceiver(mainDir: File, myPacs: PACS) extends ReceivedObjectHandler {
                     affectedSOPClass, //  affectedSOPClass
                     specification) // identifier
                 None
-            }
-            catch {
+            } catch {
                 case e: Exception => {
-                    Some("CMove error: " + Log.fmtEx(e))
+                    Some("CMove error: " + fmtEx(e))
                 }
             }
-        }
-        else Some("The subdirectory value must be set before performing a C-MOVE.  Use setSubDir")
+        } else Some("The subdirectory value must be set before performing a C-MOVE.  Use setSubDir")
     }
 
     /** Start a DICOM receiver. */
     private def startReceiver: Unit = {
+        println("==================================== DicomReceiver.startReceiver") // TODO rm
         val dispatcherThread = new Thread(dispatcher)
         dispatcherThread.start();
-        Log.get.info("Started DICOM receiver: " + myPacs)
+        logger.info("Started DICOM receiver: " + myPacs)
     }
 
     startReceiver
 }
 
-object DicomReceiver {
+object DicomReceiver extends Logging {
+
+    class DefaultReceivedObjectHandler extends ReceivedObjectHandler {
+        override def sendReceivedObjectIndication(fileName: String, transferSyntax: String, callingAETitle: String): Unit = {
+            logger.info("Received DICOM from " + callingAETitle + " file " + " DICOM file " + fileName)
+        }
+    }
 
     def addAttr(tag: AttributeTag, value: String, identifier: AttributeList): AttributeList = {
         val a = AttributeFactory.newAttribute(tag)
