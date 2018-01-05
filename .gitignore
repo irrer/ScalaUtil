@@ -27,6 +27,7 @@ target/
 .settings/
 .cache
 .cache-main
+.cache-tests
 
 hs_err_pid*.log
 
