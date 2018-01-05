@@ -10,6 +10,7 @@
         <dependency> <groupId>com.jsuereth</groupId>           <artifactId>scala-arm_2.12</artifactId> <version>2.0</version>      </dependency>
         <dependency> <groupId>org.scala-lang.modules</groupId> <artifactId>scala-xml_2.12</artifactId> <version>1.0.6</version>    </dependency>
         <dependency> <groupId>org.slf4j</groupId>              <artifactId>slf4j-api</artifactId>      <version>1.7.25</version>   </dependency>
+        <dependency> <groupId>org.scalatest</groupId>          <artifactId>scalatest_2.12</artifactId> <version>3.2.0-SNAP9</version>  <scope>test</scope></dependency>
     </dependencies>
         
     <!-- 
@@ -19,7 +20,7 @@
     -->
         
     <build>
-        <sourceDirectory>src</sourceDirectory>
+        <!--  <sourceDirectory>src</sourceDirectory> -->
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -63,21 +64,30 @@
                     </execution>
                 </executions>
             </plugin>
+            
+            <!-- enable scalatest -->
+            <plugin>
+                <groupId>org.scalatest</groupId>
+                <artifactId>scalatest-maven-plugin</artifactId>
+                <version>1.0</version>
+                <configuration>
+                    <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
+                    <junitxml>.</junitxml>
+                    <filereports>WDF TestSuite.txt</filereports>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>test</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
 
     <distributionManagement>
-    <!--
-        <repository>
-            <id>releases</id>
-            <name>Internal Releases</name>
-            <url>http://141.214.124.203:8081/nexus/content/repositories/releases</url>
-        </repository>
-        <snapshotRepository>
-            <id>snapshots</id>
-            <name>Internal Releases</name>
-            <url>http://141.214.124.203:8081/nexus/content/repositories/snapshots</url>
-        </snapshotRepository>
-    -->
     </distributionManagement>
 </project>
