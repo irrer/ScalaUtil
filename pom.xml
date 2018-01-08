@@ -20,7 +20,8 @@
     -->
         
     <build>
-        <!--  <sourceDirectory>src</sourceDirectory> -->
+        <!-- TODO : When building jar with dependencies, it should not include test code from src/test/java . 
+         <sourceDirectory>src</sourceDirectory> -->
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
