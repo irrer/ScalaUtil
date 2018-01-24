@@ -35,7 +35,9 @@ import java.util.HashSet
 /**
  * Support for copying files from Varian to the local file system.
  */
-class DicomReceiver(mainDir: File, myPacs: PACS) extends ReceivedObjectHandler {
+class DicomReceiver(mainDir: File, myPacs: PACS, receivedObjectHandler: ReceivedObjectHandler) {
+
+    def this(mainDir: File, myPacs: PACS) = this(mainDir, myPacs, new DicomReceiver.DefaultReceivedObjectHandler)
 
     lazy val mainDirName = mainDir.getAbsolutePath
 
@@ -66,10 +68,6 @@ class DicomReceiver(mainDir: File, myPacs: PACS) extends ReceivedObjectHandler {
         }
     }
 
-    override def sendReceivedObjectIndication(fileName: String, transferSyntax: String, callingAETitle: String): Unit = {
-        Log.get.info("Received from " + callingAETitle + " file " + " DICOM file " + fileName)
-    }
-
     private def dispatcher = {
         println("Starting dispatcher with PACS " + myPacs)
         new StorageSOPClassSCPDispatcher(
@@ -77,7 +75,7 @@ class DicomReceiver(mainDir: File, myPacs: PACS) extends ReceivedObjectHandler {
             myPacs.aeTitle, // our AETitle
             mainDir, // directory for temporary and fetched files
             new StoredFilePathStrategyJobFolders, // strategy for naming incoming DICOM files
-            this) // ReceivedObjectHandler receivedObjectHandler,
+            receivedObjectHandler)
     }
 
     private def getPresentationContext: LinkedList[PresentationContext] = {
@@ -95,7 +93,7 @@ class DicomReceiver(mainDir: File, myPacs: PACS) extends ReceivedObjectHandler {
      *
      * @return true on success
      */
-    def cmove(specification: AttributeList, srcPacs: PACS, dstPacs: PACS): Option[String] = {
+    def cmove(specification: AttributeList, srcPacs: PACS, dstPacs: PACS, affectedSOPClass: String): Option[String] = {
         if (subDirFile.isDefined) {
             subDirFile.get.mkdirs
             val specAsString = specification.toString.replace('\0', ' ')
@@ -106,7 +104,7 @@ class DicomReceiver(mainDir: File, myPacs: PACS) extends ReceivedObjectHandler {
             }
 
             //val affectedSOPClass = SOPClass.StudyRootQueryRetrieveInformationModelMove
-            val affectedSOPClass = SOPClass.PatientRootQueryRetrieveInformationModelMove
+            //val affectedSOPClass = SOPClass.PatientRootQueryRetrieveInformationModelMove
 
             Log.get.info("Starting C-MOVE of files from " + srcPacs.aeTitle + " to " + dstPacs.aeTitle + " with specification of \n" + specAsString);
             try {
@@ -129,10 +127,17 @@ class DicomReceiver(mainDir: File, myPacs: PACS) extends ReceivedObjectHandler {
         else Some("The subdirectory value must be set before performing a C-MOVE.  Use setSubDir")
     }
 
+    @deprecated ("Use <code>cmove(specification: AttributeList, srcPacs: PACS, dstPacs: PACS, affectedSOPClass: String)</code> instead.")
+    def cmove(specification: AttributeList, srcPacs: PACS, dstPacs: PACS): Option[String] = {
+        cmove(specification: AttributeList, srcPacs: PACS, dstPacs, SOPClass.PatientRootQueryRetrieveInformationModelMove)
+    }
+
     /** Start a DICOM receiver. */
     private def startReceiver: Unit = {
+        println("==================================== DicomReceiver.startReceiver") // TODO rm
         val dispatcherThread = new Thread(dispatcher)
-        dispatcherThread.start();
+        dispatcherThread.start
+        Thread.sleep(500) // wait for receiver to start
         Log.get.info("Started DICOM receiver: " + myPacs)
     }
 
@@ -140,6 +145,12 @@ class DicomReceiver(mainDir: File, myPacs: PACS) extends ReceivedObjectHandler {
 }
 
 object DicomReceiver {
+
+    class DefaultReceivedObjectHandler extends ReceivedObjectHandler {
+        override def sendReceivedObjectIndication(fileName: String, transferSyntax: String, callingAETitle: String): Unit = {
+            Log.get.info("Received DICOM from " + callingAETitle + " file " + " DICOM file " + fileName)
+        }
+    }
 
     def addAttr(tag: AttributeTag, value: String, identifier: AttributeList): AttributeList = {
         val a = AttributeFactory.newAttribute(tag)
@@ -154,33 +165,72 @@ object DicomReceiver {
 
     def main(args: Array[String]): Unit = {
 
-        val mainDir = new File("""D:\tmp\archive_migration_from_xstor_to_velocity\""")
+        val mainDir = new File("""D:\tmp\wl\no_contours""")
 
         val cpXstorPacs = new PACS("CP_XSTOR_IRRER", "141.214.125.209", 15656)
         val irrerPacs = new PACS("IRRER", "141.214.125.209", 15678)
-        val remotePacs = new PACS("UMRO_ARCHIVE", "10.30.3.69", 104)
-        val localPacs = cpXstorPacs
+        val umroArchivePacs = new PACS("UMRO_ARCHIVE", "10.30.3.69", 104)
+        val wlqaTestPacs = new PACS("WLQA_TEST", "141.214.125.209", 5682)
+        val vmsdbdPacs = new PACS("VMSDBD", "141.214.124.167", 105)
+
+        val localPacs = wlqaTestPacs
+        val remotePacs = vmsdbdPacs
 
         val dicomReceiver = new DicomReceiver(mainDir, localPacs)
 
         //val seriesUID = "1.3.6.1.4.1.22361.48658618118952.539916499.1500572921197.3"
-        val seriesUID = "1.2.840.113704.1.111.7924.1428068730.3"
+        //val seriesUID = "1.2.840.113704.1.111.7924.1428068730.3"
+        //val seriesUID = "1.2.246.352.62.2.5632972184956645828.12605259155903877552"
 
-        val id = addAttr(TagFromName.SeriesInstanceUID, seriesUID, buildIdentifier)
+        def attempt(qrLevel: String, moveType: String) = {
 
-        println("localPacs: " + localPacs)
-        println("remotePacs: " + remotePacs)
+            println("moveType: " + moveType)
+            val al = new AttributeList
 
-        dicomReceiver.setSubDir("test_cmove")
-        println("Putting files into " + dicomReceiver.getSubDir.getAbsolutePath)
-        Utility.deleteFileTree(dicomReceiver.getSubDir)
-        val success = dicomReceiver.cmove(id, remotePacs, localPacs)
+            val critera = List(
+                (TagFromName.QueryRetrieveLevel, qrLevel),
+                // (TagFromName.SeriesInstanceUID, "1.2.246.352.62.2.5632972184956645828.12605259155903877552") //            ,
+                (TagFromName.PatientID, "QASRSWLCBCT2017Q4"),
+                (TagFromName.InstanceCreationDate, "20180123"))
+            //(TagFromName.SeriesDate, "20171204"))
 
-        success match {
-            case Some(msg) => println("Failed: " + msg)
-            case _ => println("success")
+            //(TagFromName.InstanceCreationDate, "20170522")
+
+            critera.map(c => addAttr(c._1, c._2, al))
+
+            println("localPacs: " + localPacs)
+            println("remotePacs: " + remotePacs)
+
+            dicomReceiver.setSubDir("test_cmove")
+            println("Putting files into " + dicomReceiver.getSubDir.getAbsolutePath)
+            Utility.deleteFileTree(dicomReceiver.getSubDir)
+            val success = dicomReceiver.cmove(al, remotePacs, localPacs, moveType)
+
+            success match {
+                case Some(msg) => println("Failed: " + msg)
+                case _ => println("success")
+            }
+            println("\n")
         }
 
+        val moveList = List(
+            SOPClass.StudyRootQueryRetrieveInformationModelMove)
+        //SOPClass.PatientRootQueryRetrieveInformationModelMove,
+        //SOPClass.PatientStudyOnlyQueryRetrieveInformationModelMove
+
+        val qrLevelList = List(
+            "STUDY",
+            "PATIENT",
+            "SERIES",
+            "IMAGE",
+            "SR DOCUMENT")
+
+        for (qr <- qrLevelList; m <- moveList) {
+            attempt(qr, m)
+        }
+
+        Thread.sleep(1000)
+        // explicit exit is important to kill receiver thread
         System.exit(0)
     }
 
