@@ -127,7 +127,7 @@ class DicomReceiver(mainDir: File, myPacs: PACS, receivedObjectHandler: Received
         else Some("The subdirectory value must be set before performing a C-MOVE.  Use setSubDir")
     }
 
-    @deprecated ("Use <code>cmove(specification: AttributeList, srcPacs: PACS, dstPacs: PACS, affectedSOPClass: String)</code> instead.")
+    @deprecated("Use <code>cmove(specification: AttributeList, srcPacs: PACS, dstPacs: PACS, affectedSOPClass: String)</code> instead.")
     def cmove(specification: AttributeList, srcPacs: PACS, dstPacs: PACS): Option[String] = {
         cmove(specification: AttributeList, srcPacs: PACS, dstPacs, SOPClass.PatientRootQueryRetrieveInformationModelMove)
     }
@@ -189,10 +189,14 @@ object DicomReceiver {
 
             val critera = List(
                 (TagFromName.QueryRetrieveLevel, qrLevel),
-                // (TagFromName.SeriesInstanceUID, "1.2.246.352.62.2.5632972184956645828.12605259155903877552") //            ,
-                (TagFromName.PatientID, "QASRSWLCBCT2017Q4"),
-                (TagFromName.InstanceCreationDate, "20180123"))
-            //(TagFromName.SeriesDate, "20171204"))
+                //(TagFromName.SeriesInstanceUID, "1.2.246.352.62.2.5632972184956645828.12605259155903877552")           ,
+                //(TagFromName.SeriesInstanceUID, "1.2.246.352.61.2.5421822395683390666.16573112587897184688") //            ,
+                (TagFromName.SeriesInstanceUID, "1.2.246.352.61.2.5283548628292985022.14023638064450545321") //            ,
+                //(TagFromName.FrameOfReferenceUID, "1.2.246.352.63.3.4679404570000411739.17035787892262232219") //            ,
+                //(TagFromName.PatientID, "QASRSWLCBCT2017Q4"),
+                //(TagFromName.InstanceCreationDate, "20180123"))
+                //(TagFromName.SeriesDate, "20171204")
+                )
 
             //(TagFromName.InstanceCreationDate, "20170522")
 
@@ -213,23 +217,25 @@ object DicomReceiver {
             println("\n")
         }
 
-        val moveList = List(
-            SOPClass.StudyRootQueryRetrieveInformationModelMove)
-        //SOPClass.PatientRootQueryRetrieveInformationModelMove,
-        //SOPClass.PatientStudyOnlyQueryRetrieveInformationModelMove
+        //        val moveList = List(
+        //            SOPClass.StudyRootQueryRetrieveInformationModelMove)
+        //        //SOPClass.PatientRootQueryRetrieveInformationModelMove,
+        //        //SOPClass.PatientStudyOnlyQueryRetrieveInformationModelMove
+        //
+        //        val qrLevelList = List(
+        //            "STUDY",
+        //            "PATIENT",
+        //            "SERIES",
+        //            "IMAGE",
+        //            "SR DOCUMENT")
+        //
+        //        for (qr <- qrLevelList; m <- moveList) {
+        //            attempt(qr, m)
+        //        }
 
-        val qrLevelList = List(
-            "STUDY",
-            "PATIENT",
-            "SERIES",
-            "IMAGE",
-            "SR DOCUMENT")
+        attempt("IMAGE", SOPClass.StudyRootQueryRetrieveInformationModelMove)
 
-        for (qr <- qrLevelList; m <- moveList) {
-            attempt(qr, m)
-        }
-
-        Thread.sleep(1000)
+        Thread.sleep(2 * 1000)
         // explicit exit is important to kill receiver thread
         System.exit(0)
     }
