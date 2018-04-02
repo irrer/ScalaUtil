@@ -13,54 +13,64 @@ import java.text.ParseException
  */
 object Util {
 
-    def makeUID: String = {
-        UUID.randomUUID.toString
+  def makeUID: String = {
+    UUID.randomUUID.toString
+  }
+
+  def xmlToText(document: Elem): String = new PrettyPrinter(1024, 2).format(document)
+
+  /**
+   * Format a <code>Throwable</code>.
+   *
+   * @param throwable Contains description and stack trace.
+   *
+   * @return Human readable version of <code>Throwable</code> and stack trace.
+   */
+  def fmtEx(throwable: Throwable): String = {
+    throwable.getStackTrace.toList.foldLeft("")((text, stkElem) => "\n    " + stkElem)
+  }
+
+  private val standardDateFormatList = List(
+    new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX"),
+    new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX"),
+    new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS"),
+    new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss"),
+    new SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss"))
+
+  def dateToText(date: Date): String = standardDateFormatList(0).format(date)
+
+  def textToDate(text: String): Date = {
+    val maxTextLength = 23
+    val t = if (text.size > 23) text.substring(0, 23) else text
+    def parse(dateFormat: SimpleDateFormat): Either[String, Date] = {
+      try {
+        Right(dateFormat.parse(t))
+      } catch {
+        case e: ParseException => Left("Attempted to use date format " + dateFormat.toPattern + " but failed with " + e.getMessage())
+      }
     }
 
-    def xmlToText(document: Elem): String = new PrettyPrinter(1024, 2).format(document)
+    val dateList = standardDateFormatList.map(fmt => parse(fmt))
+    val validList = dateList.filter(d => d.isRight)
+    if (validList.isEmpty) throw new ParseException("Unable to parse '" + text + "' as a date string", 0)
+    val x = validList(0).right.get
+    x
+  }
 
-        /**
-     * Format a <code>Throwable</code>.
-     *
-     * @param throwable Contains description and stack trace.
-     *
-     * @return Human readable version of <code>Throwable</code> and stack trace.
-     */
-    def fmtEx(throwable: Throwable): String = {
-        throwable.getStackTrace.toList.foldLeft("")((text, stkElem) => "\n    " + stkElem)
+  /**
+   * Given a list, group them into smaller groups of a given size.  The last group in the list may be smaller than the others.
+   */
+  def sizedGroups[T](seq: Seq[T], groupSize: Int): Seq[Seq[T]] = {
+    def addGroup[T](seq: Seq[T], grp: Seq[Seq[T]]): Seq[Seq[T]] = {
+      if (seq.isEmpty) grp
+      else addGroup(seq.drop(groupSize), grp :+ seq.take(groupSize))
     }
-    
-    private val standardDateFormatList = List(
-        new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX"),
-        new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX"),
-        new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS"),
-        new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss"),
-        new SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss"))
+    addGroup(seq, Seq[Seq[T]]())
+  }
 
-    def dateToText(date: Date): String = standardDateFormatList(0).format(date)
-
-    def textToDate(text: String): Date = {
-        val maxTextLength = 23
-        val t = if (text.size > 23) text.substring(0, 23) else text
-        def parse(dateFormat: SimpleDateFormat): Either[String, Date] = {
-            try {
-                Right(dateFormat.parse(t))
-            }
-            catch {
-                case e: ParseException => Left("Attempted to use date format " + dateFormat.toPattern + " but failed with " + e.getMessage())
-            }
-        }
-
-        val dateList = standardDateFormatList.map(fmt => parse(fmt))
-        val validList = dateList.filter(d => d.isRight)
-        if (validList.isEmpty) throw new ParseException("Unable to parse '" + text + "' as a date string", 0)
-        val x = validList(0).right.get
-        x
-    }
-    
-        /** For testing only. */
-    def main(args: Array[String]): Unit = {
-        println("uuid: " + makeUID)
-    }
+  /** For testing only. */
+  def main(args: Array[String]): Unit = {
+    println("uuid: " + makeUID)
+  }
 
 }

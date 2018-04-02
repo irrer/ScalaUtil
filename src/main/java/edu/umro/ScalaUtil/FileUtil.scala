@@ -115,14 +115,16 @@ object FileUtil {
    *
    * @param inFileList Zip this list of files.  If a file is a directory, then zip the whole tree below it.
    *
-   * @param excludeList: Exclude any file whose name matches this pattern.  If the file is a directory, then its children will be excluded too.
+   * @param excludePatternList: Exclude any file whose name matches this pattern.  If the file is a directory, then its children will be excluded too.
+   *
+   * @param excludeFileList: Exclude any file equal on this list .  If the file is a directory, then its children will be excluded too.
    *
    * @param outputStream: Write to this stream.
    */
-  def readFileTreeToZipStream(inFileList: Seq[File], excludeList: Seq[String], outputStream: OutputStream): Unit = {
+  def readFileTreeToZipStream(inFileList: Seq[File], excludePatternList: Seq[String], excludeFileList: Seq[File], outputStream: OutputStream): Unit = {
     def includable(file: File) = {
       val name = file.getName
-      excludeList.find(e => name.matches(e)).isEmpty
+      excludePatternList.find(e => name.matches(e)).isEmpty && excludeFileList.find(e => e.equals(file)).isEmpty
     }
 
     def addOneFileToZip(file: File, zipOut: ZipOutputStream, parentName: Option[String]): Unit = {
@@ -135,7 +137,6 @@ object FileUtil {
           zipOut.putNextEntry(zipEntry)
           zipOut.write(data)
           zipOut.closeEntry
-          Trace.trace("added zip entry: " + entryName)
         }
       }
     }
@@ -148,11 +149,11 @@ object FileUtil {
     }
   }
 
-  def readFileTreeToZipByteArray(inFileList: Seq[File], excludeList: Seq[String]): Array[Byte] = {
+  def readFileTreeToZipByteArray(inFileList: Seq[File], excludePatternList: Seq[String], excludeFileList: Seq[File]): Array[Byte] = {
     managed(new ByteArrayOutputStream) acquireAndGet {
       baos =>
         {
-          readFileTreeToZipStream(inFileList, excludeList, baos)
+          readFileTreeToZipStream(inFileList, excludePatternList, excludeFileList, baos)
           baos.toByteArray
         }
     }
@@ -163,12 +164,12 @@ object FileUtil {
    *
    * @param mainFile: Top level input file
    */
-  def readFileTreeToZipFile(inFileList: Seq[File], excludeList: Seq[String], zipFile: File): Unit = {
+  def readFileTreeToZipFile(inFileList: Seq[File], excludePatternList: Seq[String], excludeFileList: Seq[File], zipFile: File): Unit = {
     zipFile.delete
     managed(new FileOutputStream(zipFile)) acquireAndGet {
       fos =>
         {
-          readFileTreeToZipStream(inFileList, excludeList, fos)
+          readFileTreeToZipStream(inFileList, excludePatternList, excludeFileList, fos)
           fos.close
         }
     }
@@ -241,6 +242,11 @@ object FileUtil {
           writeZipToFileTree(zipFileIn, parentDir)
         }
     }
+  }
+
+  def main(args: Array[String]): Unit = { // TODO rm
+    val j = edu.umro.ScalaUtil.FileUtil.replaceInvalidFileNameCharacters("oasijdfoaj", 'X')
+    println("j: " + j)
   }
 
 }
