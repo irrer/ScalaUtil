@@ -267,7 +267,6 @@ object DicomUtil {
       compareDouble(TagFromName.InstanceNumber, 0),
       compareString(TagFromName.InstanceCreationDate),
       compareString(TagFromName.InstanceCreationTime),
-      compareString(TagFromName.InstanceCreationTime),
       compareString(TagFromName.AcquisitionDate),
       compareString(TagFromName.AcquisitionTime),
       compareString(TagFromName.ContentDate),
