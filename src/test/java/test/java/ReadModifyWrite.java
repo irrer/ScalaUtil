@@ -21,7 +21,7 @@ public class ReadModifyWrite {
         al.read("OldDICOM.dcm");
         
         // Substitute the attributes and values of your choice
-        Attribute attr = AttributeFactory.newAttribute(TagFromName.PhysicianOfRecord);
+        Attribute attr = AttributeFactory.newAttribute(TagFromName.PhysiciansOfRecord);
         attr.addValue("John Smith");
         //short[] shorts = al.get(TagFromName.PixelData).getShortValues();
         al.put(attr);
