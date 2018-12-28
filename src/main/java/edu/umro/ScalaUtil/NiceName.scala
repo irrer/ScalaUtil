@@ -24,6 +24,7 @@ object NiceName {
   private def niceName(file: File): Unit = {
 
     total = total + 1
+    //Trace.trace("File: " + file.getAbsolutePath) // TODO rm
     val oldName = file.getName
     val newName = oldName.replaceAll(regEx, goodChar)
     val newFile: File = if (!oldName.equals(newName)) {
@@ -32,6 +33,7 @@ object NiceName {
       renamed = renamed + 1
       nf
     } else file
+    //Trace.trace("newFile isDir: " + newFile.isDirectory + " : " + newFile.getAbsolutePath) // TODO rm
     if (newFile.isDirectory) newFile.listFiles.map(f => niceName(f))
   }
 

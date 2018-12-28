@@ -15,6 +15,11 @@ import scala.collection.mutable.ArrayBuffer
 import com.pixelmed.dicom.AttributeTag
 import com.pixelmed.dicom.TagFromName
 import com.pixelmed.dicom.SOPClass
+import java.io.ByteArrayOutputStream
+import com.pixelmed.dicom.DicomOutputStream
+import com.pixelmed.dicom.TransferSyntax
+import java.io.ByteArrayInputStream
+import com.pixelmed.dicom.DicomInputStream
 
 object DicomUtil {
 
@@ -293,20 +298,59 @@ object DicomUtil {
   def isImageStorage(attributeList: AttributeList): Boolean = {
     SOPClass.isImageStorage(Attribute.getSingleStringValueOrEmptyString(attributeList, TagFromName.SOPClassUID))
   }
-  
+
+  /**
+   * Make a new copy of an attribute list, not sharing any data with the original.
+   *
+   * @param source
+   *            List to copy.
+   *
+   * @return Copy of list.
+   *
+   */
+  def clone(source: AttributeList): AttributeList = {
+    val dest = new AttributeList
+
+    val transferSyntaxAttr = source.get(TagFromName.TransferSyntaxUID)
+    val transferSyntax = {
+      val ts = source.get(TagFromName.TransferSyntaxUID)
+      if ((ts != null) && ts.getStringValues.nonEmpty)
+        ts.getStringValues.head
+      else
+        TransferSyntax.ExplicitVRLittleEndian; // DEFAULT_TRANSFER_SYNTAX;
+    }
+    val byteArrayOutputStream = new ByteArrayOutputStream
+    val dicomOutputStream = new DicomOutputStream(byteArrayOutputStream, transferSyntax, transferSyntax);
+    source.write(dicomOutputStream);
+
+    val byteArrayInputStream = new ByteArrayInputStream(byteArrayOutputStream.toByteArray)
+    dest.read(new DicomInputStream(byteArrayInputStream))
+
+    dest
+  }
+
   /**
    * Self test.
    */
   def main(args: Array[String]): Unit = {
 
     val a = new AttributeList
-    a.read("""D:\tmp\mrct2\input\Vessel\1.3.6.1.4.1.22361.48658618118952.1460113624.1461353992992.986.dcm""")
+    a.read("""D:\pf\eclipse\workspaceOxygen\ScalaUtil\src\test\resources\vessel_a.dcm""")
     val b = new AttributeList
-    b.read("""D:\tmp\mrct2\input\Vessel\1.3.6.1.4.1.22361.48658618118952.1460113624.1461353992992.988.dcm""")
+    b.read("""D:\pf\eclipse\workspaceOxygen\ScalaUtil\src\test\resources\vessel_b.dcm""")
 
-    println("compareDicom(a,b): " + compareDicom(a, b))
-    println("compareDicom(b,a): " + compareDicom(b, a))
-    println("compareDicom(a,a): " + compareDicom(a, a))
+    println("compareDicom(a,b) should be -1: " + compareDicom(a, b))
+    println("compareDicom(b,a) should be  1: " + compareDicom(b, a))
+    println("compareDicom(a,a) should be  0: " + compareDicom(a, a))
+
+    val copyA = clone(a)
+    println("compareDicom(a,copyA) should be  0: " + compareDicom(a, copyA))
+
+    val aText = a.toString.replace('\0', ' ')
+    val copyAText = copyA.toString.replace('\0', ' ')
+
+    println("Should be true: " + aText.equals(copyAText))
+
     System.exit(99)
 
     val name = "Smith^John    ^Q"
