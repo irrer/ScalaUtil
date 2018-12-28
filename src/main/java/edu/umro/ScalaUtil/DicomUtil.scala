@@ -330,6 +330,25 @@ object DicomUtil {
   }
 
   /**
+   * Get all instances of the given tag from the attribute list by searching it recursively.
+   */
+  def getInstancesOfAttribute(al: AttributeList, tag: AttributeTag): IndexedSeq[Attribute] = {
+
+    def seqToAtList(seq: SequenceAttribute): IndexedSeq[Attribute] = {
+      (0 until seq.getNumberOfItems).
+        map(i => seq.getItem(i).getAttributeList).
+        map(a => getInstancesOfAttribute(a, tag)).
+        flatten
+    }
+
+    val atList = al.values.toArray.toList.toIndexedSeq.map(at => at.asInstanceOf[Attribute])
+    val list = atList.filter(at => at.getTag.equals(tag))
+    val seqList = atList.filter(at => at.isInstanceOf[SequenceAttribute]).map(at => at.asInstanceOf[SequenceAttribute])
+    val all = atList ++ seqList.map(seq => seqToAtList(seq)).flatten
+    all
+  }
+
+  /**
    * Self test.
    */
   def main(args: Array[String]): Unit = {
