@@ -176,22 +176,6 @@ object DicomUtil {
   def attributeListToString(attributeList: AttributeList): String = attributeListToString(attributeList, "")
 
   /**
-   * Recursively search the given attribute list for all instances of the given tag.
-   */
-  def findAll(attributeList: AttributeList, tag: AttributeTag): List[Attribute] = {
-    def tagOfList(al: AttributeList): Array[Attribute] = if (al.get(tag) == null) Array[Attribute]() else Array(al.get(tag))
-
-    def childLists(al: AttributeList): Array[AttributeList] = {
-      val seqAList = al.values.toArray.filter(a => a.isInstanceOf[SequenceAttribute]).map(sa => sa.asInstanceOf[SequenceAttribute])
-      seqAList.map(sa => (0 until sa.getNumberOfItems).map(i => sa.getItem(i).getAttributeList)).flatten
-    }
-
-    def find(al: AttributeList): Array[Attribute] = childLists(al).map(c => find(c)).foldLeft(tagOfList(al))(_ ++ _)
-
-    find(attributeList).toList
-  }
-
-  /**
    * Represent the components of a person name (Value Representation PN) in DICOM format.
    *
    *  Smith^John^Q --> John Q Smith
@@ -330,23 +314,31 @@ object DicomUtil {
   }
 
   /**
-   * Get all instances of the given tag from the attribute list by searching it recursively.
+   * Get the attribute lists of a sequence attribute.
    */
-  def getInstancesOfAttribute(al: AttributeList, tag: AttributeTag): IndexedSeq[Attribute] = {
+  def seqToAttr(al: AttributeList, tag: AttributeTag): Seq[AttributeList] = {
+    val seq = (al.get(tag)).asInstanceOf[SequenceAttribute]
+    (0 until seq.getNumberOfItems).map(i => seq.getItem(i).getAttributeList)
+  }
 
-    def seqToAtList(seq: SequenceAttribute): IndexedSeq[Attribute] = {
-      (0 until seq.getNumberOfItems).
-        map(i => seq.getItem(i).getAttributeList).
-        map(a => getInstancesOfAttribute(a, tag)).
-        flatten
+  /**
+   * Get all instances of attributes with a tag on the given list by searching the given <code>AttributeList</code> recursively.
+   */
+  def findAll(attributeList: AttributeList, tagList: Set[AttributeTag]): IndexedSeq[Attribute] = {
+
+    def childSeq(al: AttributeList): IndexedSeq[AttributeList] = {
+      val seqList = al.values.toArray.filter(at => at.isInstanceOf[SequenceAttribute]).map(at => at.asInstanceOf[SequenceAttribute])
+      val alListList = seqList.map(seq => (0 until seq.getNumberOfItems).map(i => seq.getItem(i).getAttributeList)).flatten
+      alListList.toIndexedSeq
     }
 
-    val atList = al.values.toArray.toList.toIndexedSeq.map(at => at.asInstanceOf[Attribute])
-    val list = atList.filter(at => at.getTag.equals(tag))
-    val seqList = atList.filter(at => at.isInstanceOf[SequenceAttribute]).map(at => at.asInstanceOf[SequenceAttribute])
-    val all = atList ++ seqList.map(seq => seqToAtList(seq)).flatten
+    val atList = attributeList.values.toArray.toList.toIndexedSeq.map(at => at.asInstanceOf[Attribute])
+    val listOfInterest = atList.filter(at => tagList.contains(at.getTag))
+    val all = listOfInterest ++ childSeq(attributeList).map(child => findAll(child, tagList)).flatten
     all
   }
+
+  def findAll(attributeList: AttributeList, tag: AttributeTag): IndexedSeq[Attribute] = findAll(attributeList, Set(tag))
 
   /**
    * Self test.

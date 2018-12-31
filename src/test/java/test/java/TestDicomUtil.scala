@@ -10,6 +10,7 @@ import edu.umro.ScalaUtil.FileUtil
 import com.pixelmed.dicom.AttributeList
 import edu.umro.ScalaUtil.DicomUtil
 import com.pixelmed.dicom.TagFromName
+import com.pixelmed.dicom.AttributeTag
 
 /**
  * Test DicomUtil.
@@ -18,15 +19,31 @@ import com.pixelmed.dicom.TagFromName
 
 class TestDicomUtil extends FlatSpec with Matchers {
 
+  val file = new File("""src\test\resources\rtplan.dcm""")
+  println("Using DICOM file " + file.getAbsolutePath)
   val source = new AttributeList
-  source.read(new File("""src\test\resources\rtplan.dcm"""))
+  source.read(file)
 
   "good" should "be good" in {
 
-    val tagList = DicomUtil.getInstancesOfAttribute(source, TagFromName.RTBeamLimitingDeviceType)
+    val tagSet = Set(
+      TagFromName.RTBeamLimitingDeviceType,
+      TagFromName.PatientID,
+      TagFromName.AbortFlag,
+      TagFromName.CumulativeDoseReferenceCoefficient)
 
-    println("tagList: " + tagList.mkString("\n").replace('\0', ' '))
+    val attrList = DicomUtil.findAll(source, tagSet)
 
-    true should be(true)
+    def sizeOf(tag: AttributeTag) = attrList.filter(at => at.getTag.compareTo(tag) == 0).size
+
+    //println("attrList:\n" + attrList.mkString("\n").replace('\0', ' '))
+
+    println("Total number of tags found: " + attrList.size)
+
+    attrList.size should be(432)
+    sizeOf(TagFromName.RTBeamLimitingDeviceType) should be(253)
+    sizeOf(TagFromName.PatientID) should be(1)
+    sizeOf(TagFromName.AbortFlag) should be(0)
+    sizeOf(TagFromName.CumulativeDoseReferenceCoefficient) should be(178)
   }
 }
