@@ -324,7 +324,7 @@ object DicomUtil {
   /**
    * Get all instances of attributes with a tag on the given list by searching the given <code>AttributeList</code> recursively.
    */
-  def findAll(attributeList: AttributeList, tagList: Set[AttributeTag]): IndexedSeq[Attribute] = {
+  def findAll(attributeList: AttributeList, tagSet: Set[AttributeTag]): IndexedSeq[Attribute] = {
 
     def childSeq(al: AttributeList): IndexedSeq[AttributeList] = {
       val seqList = al.values.toArray.filter(at => at.isInstanceOf[SequenceAttribute]).map(at => at.asInstanceOf[SequenceAttribute])
@@ -333,8 +333,8 @@ object DicomUtil {
     }
 
     val atList = attributeList.values.toArray.toList.toIndexedSeq.map(at => at.asInstanceOf[Attribute])
-    val listOfInterest = atList.filter(at => tagList.contains(at.getTag))
-    val all = listOfInterest ++ childSeq(attributeList).map(child => findAll(child, tagList)).flatten
+    val listOfInterest = atList.filter(at => tagSet.contains(at.getTag))
+    val all = listOfInterest ++ childSeq(attributeList).map(child => findAll(child, tagSet)).flatten
     all
   }
 
