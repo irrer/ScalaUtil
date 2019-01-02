@@ -60,6 +60,11 @@ object DicomUtil {
   }
 
   /**
+   * Format an attribute tag as a string.
+   */
+  def formatAttrTag(tag: AttributeTag) = tag.getElement().formatted("%04x") + "," + tag.getGroup().formatted("%04x")
+
+  /**
    * Convert a single non-sequence attribute to a human readable text format.
    *
    * @param attribute
@@ -83,10 +88,8 @@ object DicomUtil {
       })
 
     def tagDetails: String = {
-      val element = tag.getElement().formatted("%04x")
-      val group = tag.getGroup().formatted("%04x")
       val vrText: String = if (vr == null) "??" else new String(vr)
-      group + "," + element + " " + vrText
+      formatAttrTag(tag) + " " + vrText
     }
 
     def toTextualVR: String = {
