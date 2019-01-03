@@ -62,7 +62,7 @@ object DicomUtil {
   /**
    * Format an attribute tag as a string.
    */
-  def formatAttrTag(tag: AttributeTag) = tag.getElement().formatted("%04x") + "," + tag.getGroup().formatted("%04x")
+  def formatAttrTag(tag: AttributeTag) = tag.getGroup.formatted("%04x") + "," + tag.getElement.formatted("%04x")
 
   /**
    * Convert a single non-sequence attribute to a human readable text format.
