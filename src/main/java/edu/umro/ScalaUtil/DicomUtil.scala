@@ -20,6 +20,9 @@ import com.pixelmed.dicom.DicomOutputStream
 import com.pixelmed.dicom.TransferSyntax
 import java.io.ByteArrayInputStream
 import com.pixelmed.dicom.DicomInputStream
+import java.io.OutputStream
+import java.io.File
+import java.io.FileOutputStream
 
 object DicomUtil {
 
@@ -342,6 +345,33 @@ object DicomUtil {
   }
 
   def findAll(attributeList: AttributeList, tag: AttributeTag): IndexedSeq[Attribute] = findAll(attributeList, Set(tag))
+
+  /**
+   * Write and attribute list to an output stream, preserving the TransferSyntaxUID if specified.  Flush and
+   * close the output stream.  Throw an exception if there is an IO error.
+   */
+  def writeAttributeList(attributeList: AttributeList, outputStream: OutputStream): Unit = {
+    val transferSyntax: String = {
+      val ts = attributeList.get(TagFromName.TransferSyntaxUID)
+      if ((ts != null) && (ts.getSingleStringValueOrNull != null)) ts.getSingleStringValueOrNull
+      else TransferSyntax.ImplicitVRLittleEndian
+    }
+
+    attributeList.write(outputStream, transferSyntax, true, true)
+    outputStream.flush
+    outputStream.close
+  }
+
+  /**
+   * Write and attribute list to file, preserving the TransferSyntaxUID if specified.  If the
+   * file exists, then delete it before writing. Create a new file before writing.  Flush and
+   * close the file.  Throw an exception if there is an IO error.
+   */
+  def writeAttributeList(attributeList: AttributeList, file: File): Unit = {
+    file.delete
+    file.createNewFile
+    writeAttributeList(attributeList, new FileOutputStream(file))
+  }
 
   /**
    * Self test.
