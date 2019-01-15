@@ -244,6 +244,19 @@ object FileUtil {
     }
   }
 
+  /**
+   * List the files in a directory sorted alphabetically.  If the directory is empty or
+   * there are errors then return an empty list.
+   */
+  def listFiles(dir: File): Seq[File] = {
+    try {
+      val list = dir.listFiles.sortBy(_.getName)
+      list.toSeq
+    } catch {
+      case t: Throwable => Seq[File]()
+    }
+  }
+
   def main(args: Array[String]): Unit = { // TODO rm
     val j = edu.umro.ScalaUtil.FileUtil.replaceInvalidFileNameCharacters("oasijdfoaj", 'X')
     println("j: " + j)
