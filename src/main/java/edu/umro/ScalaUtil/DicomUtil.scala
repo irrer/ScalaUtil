@@ -344,7 +344,7 @@ object DicomUtil {
     all
   }
 
-  def findAll(attributeList: AttributeList, tag: AttributeTag): IndexedSeq[Attribute] = findAll(attributeList, Set(tag))
+  def findAllSingle(attributeList: AttributeList, tag: AttributeTag): IndexedSeq[Attribute] = findAll(attributeList, Set(tag))
 
   /**
    * Write and attribute list to an output stream, preserving the TransferSyntaxUID if specified.  Flush and
