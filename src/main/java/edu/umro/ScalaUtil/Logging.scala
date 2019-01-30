@@ -34,17 +34,17 @@ package edu.umro.ScalaUtil
  * </pre>
  */
 trait Logging {
-    protected val logger = org.slf4j.LoggerFactory.getLogger("")
+  protected val logger = org.slf4j.LoggerFactory.getLogger("")
 
-    /**
-     * Format a <code>Throwable</code>.
-     *
-     * @param throwable Contains description and stack trace.
-     *
-     * @return Human readable version of <code>Throwable</code> and stack trace.
-     */
-    def fmtEx(throwable: Throwable): String = {
-        val textList = throwable.getStackTrace.map(ste => "\n    " + ste) // convert to text
-        textList.foldLeft(throwable.toString)((t, ste) => t + ste) // join as one string
-    }
+  /**
+   * Format a <code>Throwable</code>.
+   *
+   * @param throwable Contains description and stack trace.
+   *
+   * @return Human readable version of <code>Throwable</code> and stack trace.
+   */
+  def fmtEx(throwable: Throwable): String = {
+    val textList = throwable.getStackTrace.map(ste => "\n    " + ste) // convert to text
+    textList.foldLeft(throwable.toString)((t, ste) => t + ste) // join as one string
+  }
 }
