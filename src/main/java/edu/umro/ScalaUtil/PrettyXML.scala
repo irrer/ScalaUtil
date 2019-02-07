@@ -25,7 +25,7 @@ object PrettyXML {
     } catch {
       case t: Throwable =>
         println("Unable to process file " + fileName + " : " + t.getMessage)
-        System.exit(1)
+        System.exit(7)
     }
 
   }

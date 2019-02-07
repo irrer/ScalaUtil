@@ -200,7 +200,6 @@ object FileUtil {
                 file.getParentFile.mkdirs
                 val fos = new FileOutputStream(file)
                 val size = copyStream(zipIn, fos)
-                Trace.trace("copyStream size: " + size)
                 fos.close
               }
               next
