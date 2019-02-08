@@ -374,6 +374,26 @@ object DicomUtil {
   }
 
   /**
+   * Remove members of the sequence that match according to the given function.
+   *
+   * @param al: Contains the main SequenceAttribute
+   *
+   * @param seqAttrTag: Tag of main SequenceAttribute
+   *
+   * @param identifyForRemoval: Returns true for each attribute list that should be removed.
+   */
+  def removeSeq(al: AttributeList, seqAttrTag: AttributeTag, identifyForRemoval: (AttributeList) => Boolean): Seq[AttributeList] = {
+    val listPair = DicomUtil.seqToAttr(al, seqAttrTag).partition(identifyForRemoval)
+    val remove = listPair._1
+    val keep = listPair._2
+    al.remove(seqAttrTag)
+    val newSeq = new SequenceAttribute(seqAttrTag)
+    keep.map(k => newSeq.addItem(k))
+    al.put(newSeq)
+    remove
+  }
+
+  /**
    * Self test.
    */
   def main(args: Array[String]): Unit = {
