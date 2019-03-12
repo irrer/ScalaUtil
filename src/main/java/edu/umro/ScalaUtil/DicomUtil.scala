@@ -363,7 +363,7 @@ object DicomUtil {
   }
 
   /**
-   * Write and attribute list to file, preserving the TransferSyntaxUID if specified.  If the
+   * Write an attribute list to file, preserving the TransferSyntaxUID if specified.  If the
    * file exists, then delete it before writing. Create a new file before writing.  Flush and
    * close the file.  Throw an exception if there is an IO error.
    */
