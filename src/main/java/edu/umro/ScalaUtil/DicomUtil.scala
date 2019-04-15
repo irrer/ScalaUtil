@@ -23,6 +23,7 @@ import com.pixelmed.dicom.DicomInputStream
 import java.io.OutputStream
 import java.io.File
 import java.io.FileOutputStream
+import java.text.SimpleDateFormat
 
 object DicomUtil {
 
@@ -30,6 +31,12 @@ object DicomUtil {
 
   private val minorIndent = "  "
   private val indentText = minorIndent + minorIndent
+
+  /** DICOM compatible date format. */
+  val dicomDateFormat = new SimpleDateFormat("yyyyMMdd")
+
+  /** DICOM compatible time format. */
+  val dicomTimeFormat = new SimpleDateFormat("HHmmss.SSS")
 
   /**
    * List of value representations that can be displayed as strings in the
