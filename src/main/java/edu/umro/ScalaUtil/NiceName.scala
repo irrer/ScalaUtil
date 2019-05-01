@@ -12,7 +12,7 @@ import java.io.File
 
 object NiceName {
 
-  val start = System.currentTimeMillis
+  private val start = System.currentTimeMillis
 
   private val regEx = "[^a-zA-Z0-9_\\.\\-]"
   private val goodChar = '_'.toString
