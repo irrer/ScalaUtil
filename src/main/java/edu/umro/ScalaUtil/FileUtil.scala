@@ -257,6 +257,7 @@ object FileUtil {
   }
 
   def main(args: Array[String]): Unit = { // TODO rm
+    // add comment to test git
     val j = edu.umro.ScalaUtil.FileUtil.replaceInvalidFileNameCharacters("oasijdfoaj", 'X')
     println("j: " + j)
   }
