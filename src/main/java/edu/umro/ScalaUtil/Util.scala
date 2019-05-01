@@ -7,6 +7,7 @@ import java.util.UUID
 import java.util.Date
 import java.text.SimpleDateFormat
 import java.text.ParseException
+import java.io.File
 
 /**
  * Common utilities for API.
@@ -68,9 +69,30 @@ object Util {
     addGroup(seq, Seq[Seq[T]]())
   }
 
+  def getJarFile(any: Any): Option[File] = {
+    try {
+      val clazz = any.getClass
+      val classLoader = clazz.getClassLoader
+      val pkg = clazz.getPackage
+      val packageName = pkg.getName.replace('.', '/')
+      val url = classLoader.getResource(packageName)
+      val file = new File(url.getFile)
+      Some(file)
+    } catch {
+      case t: Throwable => None
+    }
+  }
+
   /** For testing only. */
   def main(args: Array[String]): Unit = {
     println("uuid: " + makeUID)
+
+    class Foo;
+    val foo = new Foo
+
+    getJarFile(foo)
+    val s = { <hey>hey</hey> }
+    getJarFile(s)
   }
 
 }
