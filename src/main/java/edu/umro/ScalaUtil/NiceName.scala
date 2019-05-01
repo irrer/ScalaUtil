@@ -33,7 +33,7 @@ object NiceName {
       renamed = renamed + 1
       nf
     } else file
-    //Trace.trace("newFile isDir: " + newFile.isDirectory + " : " + newFile.getAbsolutePath) // TODO rm
+    // modified in WSRO0103 // TODO rm
     if (newFile.isDirectory) newFile.listFiles.map(f => niceName(f))
   }
 
