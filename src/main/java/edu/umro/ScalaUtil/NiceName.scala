@@ -24,7 +24,7 @@ object NiceName {
   private def niceName(file: File): Unit = {
 
     total = total + 1
-    // change made in WSRO1009 // TODO rm
+    // change made in WSRO1009 and then by WSRO)0103 // TODO rm
     val oldName = file.getName
     val newName = oldName.replaceAll(regEx, goodChar)
     val newFile: File = if (!oldName.equals(newName)) {
