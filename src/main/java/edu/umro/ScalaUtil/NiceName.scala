@@ -12,7 +12,7 @@ import java.io.File
 
 object NiceName {
 
-  val start = System.currentTimeMillis
+  private val start = System.currentTimeMillis
 
   private val regEx = "[^a-zA-Z0-9_\\.\\-]"
   private val goodChar = '_'.toString
@@ -33,7 +33,6 @@ object NiceName {
       renamed = renamed + 1
       nf
     } else file
-    //Trace.trace("newFile isDir: " + newFile.isDirectory + " : " + newFile.getAbsolutePath) // TODO rm
     if (newFile.isDirectory) newFile.listFiles.map(f => niceName(f))
   }
 
