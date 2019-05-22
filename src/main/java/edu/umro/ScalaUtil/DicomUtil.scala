@@ -39,6 +39,21 @@ object DicomUtil {
   val dicomTimeFormat = new SimpleDateFormat("HHmmss.SSS")
 
   /**
+   * Parse a text string in DICOM time format and return ms.  On failure to parse return None.
+   */
+  def parseDicomTime(text: String): Option[Long] = {
+    try {
+      try {
+        Some(DicomUtil.dicomTimeFormat.parse(text).getTime)
+      } catch {
+        case e: java.text.ParseException => Some(DicomUtil.dicomTimeFormat.parse(text + ".000").getTime)
+      }
+    } catch {
+      case t: Throwable => None
+    }
+  }
+
+  /**
    * List of value representations that can be displayed as strings in the
    * text version of the preview.
    */
