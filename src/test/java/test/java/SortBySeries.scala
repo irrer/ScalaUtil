@@ -8,8 +8,6 @@ import com.pixelmed.dicom.TagFromName;
 import com.pixelmed.dicom.TransferSyntax;
 
 /**
- * Example of a program that reads a DICOM file, adds an attribute, and then writes it.
- *
  * @author irrer
  *
  */
