@@ -48,7 +48,6 @@ class TestDicomUtil extends FlatSpec with Matchers {
   }
 
   "roundtrip" should "get same data" in {
-    Trace.trace
 
     val fileList = Seq(
       new File("""src\test\resources\rtplan.dcm"""),
@@ -57,11 +56,8 @@ class TestDicomUtil extends FlatSpec with Matchers {
 
     val alList = fileList.map(f => { val al = new AttributeList; al.read(f); al })
 
-    Trace.trace
     val byteArray = DicomUtil.dicomToZippedByteArray(alList)
-    Trace.trace
     val alRound = DicomUtil.zippedByteArrayToDicom(byteArray)
-    Trace.trace
 
     val sopBefore = alList.map(al => al.get(TagFromName.SOPInstanceUID).getSingleStringValueOrEmptyString).mkString(" ")
     println("Round tripped DICOM size: " + alRound.size)
@@ -70,7 +66,6 @@ class TestDicomUtil extends FlatSpec with Matchers {
     println("SOPInstanceUID list: " + sopBefore)
     val sopAfter = alRound.map(al => al.get(TagFromName.SOPInstanceUID).getSingleStringValueOrEmptyString).mkString(" ")
     sopBefore should be(sopAfter)
-    Trace.trace
 
   }
 }
