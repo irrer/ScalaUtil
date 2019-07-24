@@ -24,6 +24,11 @@ import java.io.OutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
+import java.util.zip.ZipOutputStream
+import java.util.zip.ZipEntry
+import resource.managed
+import java.util.zip.ZipInputStream
+import scala.annotation.tailrec
 
 object DicomUtil {
 
@@ -382,6 +387,71 @@ object DicomUtil {
     attributeList.write(outputStream, transferSyntax, true, true)
     outputStream.flush
     outputStream.close
+  }
+
+  /**
+   * Write a list of attribute lists to a zipped byte array.  Each member will
+   * have "[SOP_UID].dcm" as its entry name.
+   */
+  def dicomToZippedByteArray(alList: Seq[AttributeList]): Array[Byte] = {
+
+    /**
+     * Special write of attribute list that does not close the stream.
+     */
+    def writeAl(attributeList: AttributeList, outputStream: OutputStream): Unit = {
+      val transferSyntax: String = {
+        val ts = attributeList.get(TagFromName.TransferSyntaxUID)
+        if ((ts != null) && (ts.getSingleStringValueOrNull != null)) ts.getSingleStringValueOrNull
+        else TransferSyntax.ImplicitVRLittleEndian
+      }
+
+      val dout = new DicomOutputStream(outputStream, TransferSyntax.ExplicitVRLittleEndian, transferSyntax)
+      attributeList.write(dout, true)
+    }
+
+    def addOneAlToZip(al: AttributeList, zipOut: ZipOutputStream): Unit = {
+      val entryName = al.get(TagFromName.SOPInstanceUID).getSingleStringValueOrEmptyString + ".dcm"
+      val zipEntry = new ZipEntry(entryName)
+      zipOut.putNextEntry(zipEntry)
+      writeAl(al, zipOut)
+    }
+
+    val byteArrayOutputStream = new ByteArrayOutputStream
+    managed(new ZipOutputStream(byteArrayOutputStream)) acquireAndGet {
+      zipOut =>
+        alList.map(al => addOneAlToZip(al, zipOut))
+    }
+    byteArrayOutputStream.toByteArray
+  }
+
+  /**
+   * Read a list of attribute lists from a zipped byte array.
+   */
+  def zippedByteArrayToDicom(data: Array[Byte]): Seq[AttributeList] = {
+
+    val byteArrayInputStream = new ByteArrayInputStream(data)
+
+    @tailrec
+    def next(zipIn: ZipInputStream, alList: Seq[AttributeList]): Seq[AttributeList] = {
+      val entry = zipIn.getNextEntry
+      if (entry == null)
+        alList
+      else {
+        if (entry.isDirectory)
+          next(zipIn, alList)
+        else {
+          val al = new AttributeList
+          val dicomInputStream = new DicomInputStream(zipIn)
+          al.read(dicomInputStream)
+          next(zipIn, alList :+ al)
+        }
+      }
+    }
+
+    val list = managed(new ZipInputStream(byteArrayInputStream)) acquireAndGet {
+      zipIn => next(zipIn, Seq[AttributeList]())
+    }
+    list
   }
 
   /**
