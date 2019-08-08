@@ -25,7 +25,7 @@ object Trace {
 
   /** Print current line and parameter value. */
   def trace(v: Any): Unit = {
-    val text = if (v == null) "null" else v.toString
+    val text = if (v == null) "null" else v.toString.replaceAll("\0", " ")
     println(current + " : " + text)
   }
 
