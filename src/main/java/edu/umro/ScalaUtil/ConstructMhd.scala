@@ -45,7 +45,7 @@ object ConstructMhd {
     }
   }
 
-  def makeSeries(mhd: Mhd, image: Array[Byte], outDir: File) = {
+  def makeSeries(mhd: Mhd, image: Array[Byte], outDir: File, patientId: String) = {
     val transferSyntax = TransferSyntax.ImplicitVRLittleEndian
     val StudyInstanceUID = UMROGUID.getUID
     val SeriesInstanceUID = UMROGUID.getUID
@@ -54,7 +54,6 @@ object ConstructMhd {
     val date = UMROGUID.dicomDate(now)
     val time = UMROGUID.dicomTime(now)
     val dateTime = date + time + ".000"
-    val patientId = "$MHD_" + (System.currentTimeMillis.toString.takeRight(6))
 
     def makeSlice(sliceIndex: Int) = {
       val SOPInstanceUID = UMROGUID.getUID
@@ -145,7 +144,8 @@ object ConstructMhd {
       make(TagFromName.ManufacturerModelName, "Fabricate from MHD")
       make(TagFromName.PatientName, patientId)
       make(TagFromName.PatientID, patientId)
-      make(TagFromName.PatientBirthDate, "1800")
+      make(TagFromName.PatientBirthDate, "18000101")
+      make(TagFromName.ReferringPhysicianName, "none")
       make(TagFromName.PatientSex, "O")
       make(TagFromName.SliceThickness, mhd.ElementSpacing(2).toString)
       makeDbl(TagFromName.KVP, 120)
@@ -177,8 +177,9 @@ object ConstructMhd {
       makeInt(TagFromName.BitsStored, 16)
       makeInt(TagFromName.HighBit, 15)
       makeInt(TagFromName.PixelRepresentation, 1)
-      //      makeDblM(TagFromName.WindowCenter, (Seq(60, 60)))
-      //      makeDblM(TagFromName.WindowWidth, (Seq(400, 400)))
+      makeInt(TagFromName.AcquisitionNumber, 1)
+      //    makeDblM(TagFromName.WindowCenter, (Seq(60, 60)))
+      //    makeDblM(TagFromName.WindowWidth, (Seq(400, 400)))
       makeDbl(TagFromName.RescaleIntercept, 0)
       makeDbl(TagFromName.RescaleSlope, 1)
       makePixels
@@ -204,13 +205,16 @@ object ConstructMhd {
 
   def main(args: Array[String]): Unit = {
     val start = System.currentTimeMillis
-    val mhdFileName = args.find(f => f.toLowerCase.endsWith(".mhd"))
-    if (args.size != 2) usage("Must give two files, an MHD file and an image file")
-    if (mhdFileName.isEmpty) usage("Must an MHD file")
-    val imageFileName = args.filterNot(fn => fn.equals(mhdFileName.get)).head
+    if (args.size != 3) usage("Must give three files, an MHD file and an image file and a patient ID.")
+    val mhdFileName = args(0)
+    val imageFileName = args(1)
+    val patientId = args(2)
 
-    val mhdFile = new File(mhdFileName.get)
+    val mhdFile = new File(mhdFileName)
     val imageFile = new File(imageFileName)
+
+    if (!mhdFile.canRead) usage("Can not read MHD file: " + mhdFile.getAbsolutePath)
+    if (!imageFile.canRead) usage("Can not read image file: " + imageFile.getAbsolutePath)
 
     // output directory named after MHD file
     val outDir = {
@@ -225,7 +229,7 @@ object ConstructMhd {
     val mhd = new Mhd(mhdFile)
     println("mhd: " + mhd)
     val imageBytes = Utility.readBinFile(imageFile)
-    makeSeries(mhd, imageBytes, outDir)
+    makeSeries(mhd, imageBytes, outDir, patientId)
 
     // (0 until 256).map(i => println("i: " + i.formatted("%4d") + " : " + i.formatted("%4x") + " :: " + revBits(i).formatted("%4d") + " : " + revBits(i).formatted("%4x")))
 
