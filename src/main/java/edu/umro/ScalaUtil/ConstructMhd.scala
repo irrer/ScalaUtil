@@ -11,24 +11,15 @@ import com.pixelmed.dicom.SOPClass
 import com.pixelmed.dicom.TransferSyntax
 import java.util.Date
 import com.pixelmed.dicom.OtherByteAttribute
-import scala.xml.Attribute
 import com.pixelmed.dicom.OtherWordAttribute
 import java.io.FileOutputStream
 import com.pixelmed.dicom.FileMetaInformation
+import com.pixelmed.dicom.DicomDictionary
+import com.pixelmed.dicom.Attribute
+import scala.util.Random
+import com.pixelmed.dicom.IntegerStringAttribute
 
 object ConstructMhd {
-
-  def revBits(i: Int): Int = {
-    val r = ((i >> 7) & 1) |
-      ((i >> 5) & 2) |
-      ((i >> 3) & 4) |
-      ((i >> 1) & 8) |
-      ((i << 1) & 16) |
-      ((i << 3) & 32) |
-      ((i << 5) & 64) |
-      ((i << 7) & 128)
-    r & 255
-  }
 
   case class Mhd(file: File) {
     val lineList = Utility.readFile(file).split("\n").toList
@@ -45,7 +36,7 @@ object ConstructMhd {
     }
   }
 
-  def makeSeries(mhd: Mhd, image: Array[Byte], outDir: File, patientId: String) = {
+  def makeSeries(mhd: Mhd, image: Array[Byte], outDir: File, options: AttributeList) = {
     val transferSyntax = TransferSyntax.ImplicitVRLittleEndian
     val StudyInstanceUID = UMROGUID.getUID
     val SeriesInstanceUID = UMROGUID.getUID
@@ -55,10 +46,13 @@ object ConstructMhd {
     val time = UMROGUID.dicomTime(now)
     val dateTime = date + time + ".000"
 
+    val seriesNumber = options.get(TagFromName.SeriesNumber).getIntegerValues()(0)
+
     def makeSlice(sliceIndex: Int) = {
       val SOPInstanceUID = UMROGUID.getUID
       val al = new AttributeList
-      val file = new File(outDir, (sliceIndex + 1).formatted("CT_%03d.dcm"))
+      val file = new File(outDir, (sliceIndex + 1).formatted("CT_" + seriesNumber + "_%03d.dcm"))
+      if (file.exists) throw new RuntimeException("Was going to write to file " + file.getAbsolutePath + " but it already exists.")
 
       def makeM(tag: AttributeTag, text: Seq[String]): Unit = {
         val a = AttributeFactory.newAttribute(tag)
@@ -89,20 +83,6 @@ object ConstructMhd {
       def makePixels: Unit = {
         val size = mhd.DimSize(0) * mhd.DimSize(1) * 2
         val pix = image.drop(size * sliceIndex).take(size)
-
-        //        def getPix(i: Int): Short = {
-        //          //val p = (((pix(i+1) & 255) << 16) + (pix(i) & 255))
-        //          val hi = (pix(i) & 255) << 16
-        //          val lo = pix(i + 1) & 255
-        //          val hi2 = revBits(lo)
-        //          val lo2 = revBits(hi)
-        //
-        //          val p = (hi2 + lo2) & 0xffff
-        //          p.toShort
-        //        }
-        //        val shrt = (0 until size by 2).map(i => getPix(i)).toArray
-        //        val a = new OtherWordAttribute(TagFromName.PixelData)
-        //        a.setValues(shrt)
 
         val a = new OtherByteAttribute(TagFromName.PixelData)
         a.setValues(pix)
@@ -140,10 +120,10 @@ object ConstructMhd {
       make(TagFromName.StudyDescription, "none")
       make(TagFromName.SeriesDescription, "none")
       make(TagFromName.InstitutionalDepartmentName, "Rad Onc")
-      make(TagFromName.OperatorsName, "Rocky")
+      make(TagFromName.OperatorsName, "Rocky Owen")
       make(TagFromName.ManufacturerModelName, "Fabricate from MHD")
-      make(TagFromName.PatientName, patientId)
-      make(TagFromName.PatientID, patientId)
+      //make(TagFromName.PatientName, patientId)
+      //make(TagFromName.PatientID, patientId)
       make(TagFromName.PatientBirthDate, "18000101")
       make(TagFromName.ReferringPhysicianName, "none")
       make(TagFromName.PatientSex, "O")
@@ -151,13 +131,12 @@ object ConstructMhd {
       makeDbl(TagFromName.KVP, 120)
       makeDbl(TagFromName.SpacingBetweenSlices, mhd.ElementSpacing(2).toDouble)
       make(TagFromName.DeviceSerialNumber, "001")
-      make(TagFromName.SoftwareVersions, "0.0.1")
+      make(TagFromName.SoftwareVersions, "irrer 0.0.2")
       make(TagFromName.PatientPosition, "HFS")
       make(TagFromName.AcquisitionType, "SPIRAL")
       make(TagFromName.StudyInstanceUID, StudyInstanceUID)
       make(TagFromName.SeriesInstanceUID, SeriesInstanceUID)
       make(TagFromName.StudyID, "none")
-      makeInt(TagFromName.SeriesNumber, 1)
       makeInt(TagFromName.InstanceNumber, sliceIndex + 1)
       makeDblM(TagFromName.ImagePositionPatient, Seq(mhd.Offset(0), mhd.Offset(1), SliceLocation))
       makeM(TagFromName.ImageOrientationPatient, Seq("1", "0", "0", "0", "1", "0"))
@@ -178,16 +157,15 @@ object ConstructMhd {
       makeInt(TagFromName.HighBit, 15)
       makeInt(TagFromName.PixelRepresentation, 1)
       makeInt(TagFromName.AcquisitionNumber, 1)
-      //    makeDblM(TagFromName.WindowCenter, (Seq(60, 60)))
-      //    makeDblM(TagFromName.WindowWidth, (Seq(400, 400)))
       makeDbl(TagFromName.RescaleIntercept, 0)
       makeDbl(TagFromName.RescaleSlope, 1)
+
       makePixels
 
-      //DicomUtil.writeAttributeList(al, file)
+      // put in user options
+      options.values.toArray.toSeq.map(a => al.put(a.asInstanceOf[Attribute]))
 
-      //al.write(new FileOutputStream(file), transferSyntax, true, true)
-      FileMetaInformation.addFileMetaInformation(al, transferSyntax, "Mhd");
+      FileMetaInformation.addFileMetaInformation(al, transferSyntax, "IrrerMHD");
 
       DicomUtil.writeAttributeList(al, file)
       println("Created " + file.getAbsolutePath)
@@ -198,42 +176,161 @@ object ConstructMhd {
     }
   }
 
+  private val readMe = {
+    """
+FOR RESEARCH ONLY.  NOT FOR CLINICAL USE.
+
+----------------------------------------
+This utility is run from the DOS command line and creates a DICOM
+series given an MHD file, image file, and list of options.
+
+This software requires Java to be installed with a minimum of version 8.
+
+Command usage:
+
+    constructmhd [mhdfile] [imagefile] [outputdir] "option1:value1" "option2:value2" ...
+
+Enclosing option:value pairs in quotes allows special characters in the value.
+
+The following options are supported.  These all represent DICOM tags and
+may be useful for constructing the DICOM the way it is needed.  If they are
+not specified then a default value will be used.
+
+    StudyDescription
+    SeriesDescription
+    StudyID
+    PatientName : standard syntax is LastName^FirstName
+    PatientID
+    PatientPosition : Defaults to HFS.  (must be one of HFS HFP HFDR HFDL FFDR FFDL FFP FFS)
+    SeriesNumber : must be an integer, usually a small number unique to the series.  Used to name DICOM files.
+
+Example:
+
+    constructmhd foo.mhd images.raw C:\Users\rockyo\dicom "PatientID:$lung001" "SeriesDescription:left lung" "SeriesNumber:5"
+
+Files would be created with CT_[SeriesNumber]_[InstanceNumber].dcm , as in:
+
+    CT_5_001.dcm
+    CT_5_002.dcm
+    CT_5_003.dcm
+    CT_5_004.dcm
+    .
+    .
+    .
+
+This software was written by Jim Irrer (irrer@med.umich.edu).
+
+A free DICOM anonymizer/viewer (also by Jim Irrer) is
+available at: https://github.com/irrer/DICOMClient#user-content-dicom-for
+
+FOR RESEARCH ONLY.  NOT FOR CLINICAL USE.
+"""
+  }
+
   private def usage(msg: String) = {
     println(msg)
+    println(readMe)
     System.exit(1)
   }
 
-  def main(args: Array[String]): Unit = {
-    val start = System.currentTimeMillis
-    if (args.size != 3) usage("Must give three files, an MHD file and an image file and a patient ID.")
-    val mhdFileName = args(0)
-    val imageFileName = args(1)
-    val patientId = args(2)
+  private val dict = new DicomDictionary
+  val rand = new Random
 
-    val mhdFile = new File(mhdFileName)
-    val imageFile = new File(imageFileName)
+  val defaultPatId = "$" + ("00000000" + rand.nextLong.toString).takeRight(8)
 
-    if (!mhdFile.canRead) usage("Can not read MHD file: " + mhdFile.getAbsolutePath)
-    if (!imageFile.canRead) usage("Can not read image file: " + imageFile.getAbsolutePath)
+  val defaultSeriesNumber = (rand.nextInt(1000) + 1) % 1000
 
-    // output directory named after MHD file
-    val outDir = {
-      val parent = mhdFile.getParent
-      val name = mhdFile.getName.dropRight(4) + "Dicom"
-      val od = new File(parent, name)
-      od
+  /**
+   * Parse the user options into an AttributeList. Require it to contain a PatientID and PatientName.
+   */
+  private def getOptions(args: Array[String]): AttributeList = {
+
+    val al = new AttributeList
+
+    // ensure that there is a SeriesNumber so we can name files.
+    val SeriesNumber = AttributeFactory.newAttribute(TagFromName.SeriesNumber)
+    SeriesNumber.addValue(defaultSeriesNumber)
+    al.put(SeriesNumber)
+
+    /**
+     * Make an attribute from a name:value pair
+     */
+    def argToAttr(text: String) = {
+      val sep = text.indexOf(':')
+
+      val name = text.substring(0, sep)
+      val value = text.substring(sep + 1)
+
+      val attr = AttributeFactory.newAttribute(dict.getTagFromName(name))
+      if (attr.isInstanceOf[IntegerStringAttribute])
+        attr.addValue(value.toInt)
+      else
+        attr.addValue(value)
+      al.put(attr)
+      attr
     }
-    Utility.deleteFileTree(outDir)
-    outDir.mkdirs
-    println("Using MHD file: " + mhdFile.getAbsolutePath + "    image file: " + imageFile.getAbsolutePath + "    output: " + outDir.getAbsolutePath)
-    val mhd = new Mhd(mhdFile)
-    println("mhd: " + mhd)
-    val imageBytes = Utility.readBinFile(imageFile)
-    makeSeries(mhd, imageBytes, outDir, patientId)
 
-    // (0 until 256).map(i => println("i: " + i.formatted("%4d") + " : " + i.formatted("%4x") + " :: " + revBits(i).formatted("%4d") + " : " + revBits(i).formatted("%4x")))
+    args.toSeq.drop(3).map(a => argToAttr(a))
 
-    println("Elapsed ms: " + (System.currentTimeMillis - start))
+    def addPatId(patId: String) = {
+      val attr = AttributeFactory.newAttribute(TagFromName.PatientID)
+      attr.addValue(patId)
+      al.put(attr)
+    }
+
+    def addPatName(patName: String) = {
+      val attr = AttributeFactory.newAttribute(TagFromName.PatientName)
+      attr.addValue(patName)
+      al.put(attr)
+    }
+
+    (al.get(TagFromName.PatientID), al.get(TagFromName.PatientName)) match {
+      case (null, null) => {
+        addPatId(defaultPatId)
+        addPatName(defaultPatId)
+      }
+      case (null, patName) => addPatId(patName.getSingleStringValueOrDefault(defaultPatId))
+      case (patId, null) => addPatName(patId.getSingleStringValueOrDefault(defaultPatId))
+      case _ =>
+    }
+    al
+  }
+
+  def restrict = println("This software is for research only.  Not for clinical use.")
+
+  def main(args: Array[String]): Unit = {
+    try {
+      restrict
+      val start = System.currentTimeMillis
+      if (args.size == 0) usage("Help")
+      if (args.size < 3) usage("Must give at least two files, an MHD file and an image file, followed by the output folder.")
+      val mhdFileName = args(0)
+      val imageFileName = args(1)
+
+      val options = getOptions(args)
+
+      val mhdFile = new File(mhdFileName)
+      val imageFile = new File(imageFileName)
+
+      if (!mhdFile.canRead) usage("Can not read MHD file: " + mhdFile.getAbsolutePath)
+      if (!imageFile.canRead) usage("Can not read image file: " + imageFile.getAbsolutePath)
+
+      // output directory named after MHD file
+      val outDir = new File(args(2))
+      outDir.mkdirs
+      println("Using MHD file: " + mhdFile.getAbsolutePath + "    image file: " + imageFile.getAbsolutePath + "    output: " + outDir.getAbsolutePath)
+      val mhd = new Mhd(mhdFile)
+      println("mhd: " + mhd)
+      val imageBytes = Utility.readBinFile(imageFile)
+      makeSeries(mhd, imageBytes, outDir, options)
+
+      println("Elapsed ms: " + (System.currentTimeMillis - start))
+    } catch {
+      case t: Throwable =>
+        usage("Unexpected error: " + t.getMessage)
+        t.printStackTrace
+    }
+    restrict
   }
 
 }
