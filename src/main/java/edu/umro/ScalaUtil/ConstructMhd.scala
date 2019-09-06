@@ -321,7 +321,11 @@ FOR RESEARCH ONLY.  NOT FOR CLINICAL USE.
       println("Using MHD file: " + mhdFile.getAbsolutePath + "    image file: " + imageFile.getAbsolutePath + "    output: " + outDir.getAbsolutePath)
       val mhd = new Mhd(mhdFile)
       println("mhd: " + mhd)
+      val expectedImageSize = mhd.DimSize.map(i => i.toLong).product * 2
       val imageBytes = Utility.readBinFile(imageFile)
+      if (imageBytes.size != expectedImageSize) {
+        usage("The MHD file says that the image should contain " + expectedImageSize + " bytes, but actually has " + imageBytes.size + "  Do you have the right MHD paired with the right image file?")
+      }
       makeSeries(mhd, imageBytes, outDir, options)
 
       println("Elapsed ms: " + (System.currentTimeMillis - start))
