@@ -18,6 +18,7 @@ import com.pixelmed.dicom.DicomDictionary
 import com.pixelmed.dicom.Attribute
 import scala.util.Random
 import com.pixelmed.dicom.IntegerStringAttribute
+import org.slf4j.impl.StaticLoggerBinder
 
 object ConstructMhd {
 
@@ -301,6 +302,7 @@ FOR RESEARCH ONLY.  NOT FOR CLINICAL USE.
   def main(args: Array[String]): Unit = {
     try {
       restrict
+
       val start = System.currentTimeMillis
       if (args.size == 0) usage("Help")
       if (args.size < 3) usage("Must give at least two files, an MHD file and an image file, followed by the output folder.")
