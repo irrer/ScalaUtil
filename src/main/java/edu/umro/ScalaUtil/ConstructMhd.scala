@@ -1,6 +1,7 @@
 package edu.umro.ScalaUtil
 
 import java.io.File
+import java.io.FileInputStream
 import edu.umro.util.Utility
 import edu.umro.util.UMROGUID
 import com.pixelmed.dicom.AttributeList
@@ -22,22 +23,49 @@ import org.slf4j.impl.StaticLoggerBinder
 
 object ConstructMhd {
 
-  case class Mhd(file: File) {
-    val lineList = Utility.readFile(file).split("\n").toList
+  private val defaultOffset = Seq(0.0, 0.0, 0.0)
+
+  private val expectedElementTypeList = Seq("MET_SHORT", "MET_FLOAT")
+
+  private case class Mhd(file: File) {
+    val lineList = Utility.readFile(file).split("\n").toList.filter(line => line.contains("=")).filterNot(line => line.contains("%"))
     def toKv(line: String) = (line.split(" ").head, line.split("=")(1).trim.split(" ").toSeq)
     private val kvMap = lineList.map(line => toKv(line)).toMap
     def get(key: String) = kvMap(key)
 
     val DimSize = get("DimSize").map(s => s.toInt)
     val ElementSpacing = get("ElementSpacing").map(s => s.toDouble)
-    val Offset = get("Offset").map(s => s.toDouble)
+    val Offset: Seq[Double] = {
+      try {
+        get("Offset").map(s => s.toDouble)
+      } catch {
+        case t: Throwable => {
+          println("Frame of reference offset not given.  Using default of: " + defaultOffset.mkString("  "))
+          defaultOffset
+        }
+      }
+    }
+    val ElementType: String = {
+      try {
+        val et = get("ElementType").head
+        if (!expectedElementTypeList.contains(et)) usage("Unexpected ElementType in MHD file: " + et + "\nSupported types are: " + expectedElementTypeList.mkString("  "))
+        et
+      } catch {
+        case t: Throwable => {
+          println("ElementType not given.  Using default of: " + expectedElementTypeList.head)
+          expectedElementTypeList.head
+        }
+      }
+    }
+
+    val pixSize = if (ElementType.equals("MET_SHORT")) 2 else 4
 
     override def toString = {
       kvMap.keys.toSeq.map(k => k + " : " + kvMap(k).mkString(", ")).mkString("\n    ", "\n    ", "")
     }
   }
 
-  def makeSeries(mhd: Mhd, image: Array[Byte], outDir: File, options: AttributeList) = {
+  private def makeSeries(mhd: Mhd, imageFile: File, outDir: File, options: AttributeList) = {
     val transferSyntax = TransferSyntax.ImplicitVRLittleEndian
     val StudyInstanceUID = UMROGUID.getUID
     val SeriesInstanceUID = UMROGUID.getUID
@@ -46,10 +74,15 @@ object ConstructMhd {
     val date = UMROGUID.dicomDate(now)
     val time = UMROGUID.dicomTime(now)
     val dateTime = date + time + ".000"
+    val imageStream = new FileInputStream(imageFile)
+    val imageSize = mhd.DimSize(0) * mhd.DimSize(1) * mhd.pixSize
+    val imageBytes = new Array[Byte](imageSize)
 
     val seriesNumber = options.get(TagFromName.SeriesNumber).getIntegerValues()(0)
 
     def makeSlice(sliceIndex: Int) = {
+      Runtime.getRuntime.gc
+      Thread.sleep(17)
       val SOPInstanceUID = UMROGUID.getUID
       val al = new AttributeList
       val file = new File(outDir, (sliceIndex + 1).formatted("CT_" + seriesNumber + "_%03d.dcm"))
@@ -81,14 +114,36 @@ object ConstructMhd {
 
       def makeDbl(tag: AttributeTag, dbl: Double): Unit = makeDblM(tag, Seq(dbl))
 
+      val zero = Array[Byte](0, 0)
+
       def makePixels: Unit = {
-        val size = mhd.DimSize(0) * mhd.DimSize(1) * 2
-        val pix = image.drop(size * sliceIndex).take(size)
+        val bytesRead = imageStream.read(imageBytes)
+        if (bytesRead != imageSize) usage("Was able to read only " + bytesRead + " when there were " + imageSize + " required")
+
+        val pix: Array[Byte] = {
+          if (mhd.ElementType.equals("MET_SHORT")) {
+            imageBytes
+          } else {
+            // convert float to ints
+            def float2Short(i: Int): Array[Byte] = {
+              val fInt = ((imageBytes(i + 3) & 0xff) << 24) | ((imageBytes(i + 2) & 0xff) << 16) | ((imageBytes(i + 1) & 0xff) << 8) | ((imageBytes(i + 0) & 0xff))
+              val f = java.lang.Float.intBitsToFloat(fInt)
+              if ((f > -1) || (f < 100)) {
+                val shrt = java.lang.Float.intBitsToFloat(fInt).round.toInt & 0xffff
+                Array(((shrt >> 8) & 0xff).toByte, (shrt & 0xff).toByte)
+              } else
+                zero
+            }
+            val pix = (0 until imageSize by 4).map(i => float2Short(i)).flatten.toArray
+            pix
+          }
+        }
 
         val a = new OtherByteAttribute(TagFromName.PixelData)
         a.setValues(pix)
 
         al.put(a)
+
       }
 
       val SliceLocation = mhd.Offset(2) + (sliceIndex * mhd.ElementSpacing(2))
@@ -168,7 +223,13 @@ object ConstructMhd {
 
       FileMetaInformation.addFileMetaInformation(al, transferSyntax, "IrrerMHD");
 
-      DicomUtil.writeAttributeList(al, file)
+      try {
+        DicomUtil.writeAttributeList(al, file)
+      } catch {
+        case t: Throwable => {
+          usage("unable to write file:\n    " + file.getAbsolutePath + "\nDo you have permission to write to this folder?" + "\nError: " + t)
+        }
+      }
       println("Created " + file.getAbsolutePath)
     }
 
@@ -230,16 +291,15 @@ FOR RESEARCH ONLY.  NOT FOR CLINICAL USE.
 
   private def usage(msg: String) = {
     println(msg)
-    println(readMe)
     System.exit(1)
   }
 
   private val dict = new DicomDictionary
-  val rand = new Random
+  private val rand = new Random
 
-  val defaultPatId = "$" + ("00000000" + rand.nextLong.toString).takeRight(8)
+  private val defaultPatId = "$" + ("00000000" + rand.nextLong.toString).takeRight(8)
 
-  val defaultSeriesNumber = (rand.nextInt(1000) + 1) % 1000
+  private val defaultSeriesNumber = (rand.nextInt(1000) + 1) % 1000
 
   /**
    * Parse the user options into an AttributeList. Require it to contain a PatientID and PatientName.
@@ -258,6 +318,8 @@ FOR RESEARCH ONLY.  NOT FOR CLINICAL USE.
      */
     def argToAttr(text: String) = {
       val sep = text.indexOf(':')
+
+      if (sep == -1) usage("Incorrectly formatted option:\n    " + text + "\nShould be\n    keyword:value")
 
       val name = text.substring(0, sep)
       val value = text.substring(sep + 1)
@@ -297,14 +359,37 @@ FOR RESEARCH ONLY.  NOT FOR CLINICAL USE.
     al
   }
 
-  def restrict = println("This software is for research only.  Not for clinical use.")
+  private def showOptions(options: AttributeList) = {
+    def showAttr(tag: AttributeTag) = {
+      println("    " + dict.getNameFromTag(tag) + ":" + options.get(tag).getSingleStringValueOrEmptyString)
+    }
+
+    options.keySet.toArray.toSeq.map(k => showAttr(k.asInstanceOf[AttributeTag]))
+  }
+
+  private def makeOutDir(outDir: File) = {
+    try {
+      outDir.mkdirs
+      if (!outDir.isDirectory)
+        usage("Unable to create output directory:\n    " + outDir.getAbsolutePath + "\nDo you have permission to create it?")
+    } catch {
+      case t: Throwable => usage("Unable to make output directory:\n    " + outDir.getAbsolutePath + "\nError: " + t.toString)
+    }
+  }
+
+  private def validateInputFile(input: File) = {
+    if (!input.exists) usage("Input file does not exist:\n    " + input.getAbsolutePath)
+    if (!input.canRead) usage("Can not read input file:\n    " + input.getAbsolutePath)
+  }
+
+  private def restrict = println("This software is for research only.  Not for clinical use.")
 
   def main(args: Array[String]): Unit = {
     try {
       restrict
 
       val start = System.currentTimeMillis
-      if (args.size == 0) usage("Help")
+      if (args.size == 0) usage(readMe)
       if (args.size < 3) usage("Must give at least two files, an MHD file and an image file, followed by the output folder.")
       val mhdFileName = args(0)
       val imageFileName = args(1)
@@ -319,16 +404,24 @@ FOR RESEARCH ONLY.  NOT FOR CLINICAL USE.
 
       // output directory named after MHD file
       val outDir = new File(args(2))
-      outDir.mkdirs
-      println("Using MHD file: " + mhdFile.getAbsolutePath + "    image file: " + imageFile.getAbsolutePath + "    output: " + outDir.getAbsolutePath)
+      makeOutDir(outDir)
+      println
+      println("    MHD file: " + mhdFile.getAbsolutePath)
+      println("    image file: " + imageFile.getAbsolutePath)
+      println("    output: " + outDir.getAbsolutePath)
+      showOptions(options)
+      validateInputFile(mhdFile)
+      validateInputFile(imageFile)
+      println
       val mhd = new Mhd(mhdFile)
       println("mhd: " + mhd)
-      val expectedImageSize = mhd.DimSize.map(i => i.toLong).product * 2
+      val expectedImageSize = mhd.DimSize.map(i => i.toLong).product * mhd.pixSize
       val imageBytes = Utility.readBinFile(imageFile)
-      if (imageBytes.size != expectedImageSize) {
-        usage("The MHD file says that the image should contain " + expectedImageSize + " bytes, but actually has " + imageBytes.size + "  Do you have the right MHD paired with the right image file?")
+      if (imageFile.length != expectedImageSize) {
+        usage("The MHD file says that the image should contain " + expectedImageSize + " bytes, but actually has " + imageBytes.size +
+          "\nDo you have the right MHD paired with the right image file?")
       }
-      makeSeries(mhd, imageBytes, outDir, options)
+      makeSeries(mhd, imageFile, outDir, options)
 
       println("Elapsed ms: " + (System.currentTimeMillis - start))
     } catch {
