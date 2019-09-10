@@ -29,6 +29,7 @@ import java.util.zip.ZipEntry
 import resource.managed
 import java.util.zip.ZipInputStream
 import scala.annotation.tailrec
+import com.pixelmed.dicom.FileMetaInformation
 
 object DicomUtil {
 
@@ -377,16 +378,28 @@ object DicomUtil {
    * Write and attribute list to an output stream, preserving the TransferSyntaxUID if specified.  Flush and
    * close the output stream.  Throw an exception if there is an IO error.
    */
-  def writeAttributeList(attributeList: AttributeList, outputStream: OutputStream): Unit = {
+  def writeAttributeList(attributeList: AttributeList, outputStream: OutputStream, sourceApplication: String): Unit = {
     val transferSyntax: String = {
       val ts = attributeList.get(TagFromName.TransferSyntaxUID)
       if ((ts != null) && (ts.getSingleStringValueOrNull != null)) ts.getSingleStringValueOrNull
       else TransferSyntax.ImplicitVRLittleEndian
     }
 
+    FileMetaInformation.addFileMetaInformation(attributeList, transferSyntax, sourceApplication)
     attributeList.write(outputStream, transferSyntax, true, true)
     outputStream.flush
     outputStream.close
+  }
+
+  /**
+   * Write an attribute list to file, preserving the TransferSyntaxUID if specified.  If the
+   * file exists, then delete it before writing. Create a new file before writing.  Flush and
+   * close the file.  Throw an exception if there is an IO error.
+   */
+  def writeAttributeList(attributeList: AttributeList, file: File, sourceApplication: String): Unit = {
+    file.delete
+    file.createNewFile
+    writeAttributeList(attributeList, new FileOutputStream(file), sourceApplication)
   }
 
   /**
@@ -452,17 +465,6 @@ object DicomUtil {
       zipIn => next(zipIn, Seq[AttributeList]())
     }
     list
-  }
-
-  /**
-   * Write an attribute list to file, preserving the TransferSyntaxUID if specified.  If the
-   * file exists, then delete it before writing. Create a new file before writing.  Flush and
-   * close the file.  Throw an exception if there is an IO error.
-   */
-  def writeAttributeList(attributeList: AttributeList, file: File): Unit = {
-    file.delete
-    file.createNewFile
-    writeAttributeList(attributeList, new FileOutputStream(file))
   }
 
   /**

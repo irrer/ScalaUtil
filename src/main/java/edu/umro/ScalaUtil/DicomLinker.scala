@@ -131,7 +131,7 @@ object DicomLinker extends Logging {
       val outFile = new File(outputDir, file.getName)
       outFile.delete
       println("Writing DICOM file " + outFile.getAbsolutePath)
-      DicomUtil.writeAttributeList(attributeList, outFile)
+      DicomUtil.writeAttributeList(attributeList, outFile, "MROQC Linker")
     }
   }
 

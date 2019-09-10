@@ -48,24 +48,28 @@ object TreeifyDicom {
     }
   }
 
-  private def moveSeries(seriesList: Seq[DicomObj], studyIndex: Int, seriesIndex: Int, outDir: File) = {
+  private def moveSeries(seriesList: Seq[DicomObj], studyIndex: Int, seriesIndex: Int, outDir: File, regWithCBCT: Boolean) = {
     val seriesDir = seriesList.head.getSeriesDir(studyIndex, outDir)
+    print("Putting series in " + seriesDir.getAbsolutePath + "  ")
     seriesList.zipWithIndex.map(df => df._1.moveTo(seriesDir, df._2, outDir))
+    println
   }
 
-  private def moveStudy(study: Seq[DicomObj], studyIndex: Int, outDir: File) = {
+  private def moveStudy(study: Seq[DicomObj], studyIndex: Int, outDir: File, regWithCBCT: Boolean) = {
     val seriesList = study.groupBy(_.SeriesInstanceUID).map(kv => kv._2).toSeq
-    seriesList.zipWithIndex.map(series => moveSeries(series._1, studyIndex, series._2, outDir))
+    seriesList.zipWithIndex.map(series => moveSeries(series._1, studyIndex, series._2, outDir, regWithCBCT))
   }
 
-  private def movePatient(patient: Seq[DicomObj], outDir: File) = {
+  private def movePatient(patient: Seq[DicomObj], outDir: File, regWithCBCT: Boolean) = {
     val studyList = patient.groupBy(_.StudyInstanceUID).map(kv => kv._2).toSeq
-    studyList.zipWithIndex.map(study => moveStudy(study._1, study._2, outDir))
+    studyList.zipWithIndex.map(study => moveStudy(study._1, study._2, outDir, regWithCBCT))
   }
 
   def main(args: Array[String]): Unit = {
     try {
       val start = System.currentTimeMillis
+      val regWithCBCT = System.getProperty("REGwithCBCT") != null
+      println("regWithCBCT: " + regWithCBCT)
       val inDir = new File(args(0))
       val outDir = new File(args(1))
       val fileList = inDir.listFiles.toSeq
@@ -74,7 +78,7 @@ object TreeifyDicom {
       println("Number of DICOM files to process: " + dicomFileList.size)
       val patientList = dicomFileList.groupBy(_.PatientID).map(kv => kv._2).toSeq
 
-      patientList.map(patient => movePatient(patient, outDir))
+      patientList.map(patient => movePatient(patient, outDir, regWithCBCT))
       println("\nDone.  Elapsed ms: " + (System.currentTimeMillis - start))
     } catch {
       case t: Throwable =>
