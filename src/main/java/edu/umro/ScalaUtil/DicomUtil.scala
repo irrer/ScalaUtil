@@ -396,7 +396,7 @@ object DicomUtil {
    * file exists, then delete it before writing. Create a new file before writing.  Flush and
    * close the file.  Throw an exception if there is an IO error.
    */
-  def writeAttributeList(attributeList: AttributeList, file: File, sourceApplication: String): Unit = {
+  def writeAttributeListToFile(attributeList: AttributeList, file: File, sourceApplication: String): Unit = {
     file.delete
     file.createNewFile
     writeAttributeList(attributeList, new FileOutputStream(file), sourceApplication)

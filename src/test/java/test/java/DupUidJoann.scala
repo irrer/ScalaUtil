@@ -75,7 +75,7 @@ object DupUidJoann {
     val file = new File(outDir, fileName)
     FileMetaInformation.addFileMetaInformation(al, transferSyntax, "irrer")
 
-    DicomUtil.writeAttributeList(al, file, "FixDicom")
+    DicomUtil.writeAttributeListToFile(al, file, "FixDicom")
     println("Created " + file.getAbsolutePath)
   }
 

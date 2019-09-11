@@ -224,7 +224,7 @@ object ConstructMhd {
       FileMetaInformation.addFileMetaInformation(al, transferSyntax, "IrrerMHD");
 
       try {
-        DicomUtil.writeAttributeList(al, file, "MHD2DICOM")
+        DicomUtil.writeAttributeListToFile(al, file, "MHD2DICOM")
       } catch {
         case t: Throwable => {
           usage("unable to write file:\n    " + file.getAbsolutePath + "\nDo you have permission to write to this folder?" + "\nError: " + t)
