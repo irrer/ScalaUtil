@@ -21,6 +21,19 @@ import scala.util.Random
 import com.pixelmed.dicom.IntegerStringAttribute
 import org.slf4j.impl.StaticLoggerBinder
 
+/**
+ * Convert an MHD and image file into a DICOM series.
+ *
+ * See src/main/resources/constructmhd.cmd
+ * 
+ * Invoke with the commands:
+ *
+ *     @echo off
+ *     set dirname=%~dp0
+ *     java -Xmx512m -cp %dirname%ScalaUtil_2.12-0.0.10-jar-with-dependencies.jar edu.umro.ScalaUtil.ConstructMhd %*
+ *
+ *
+ */
 object ConstructMhd {
 
   private val defaultOffset = Seq(0.0, 0.0, 0.0)
