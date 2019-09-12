@@ -70,6 +70,10 @@ object TreeifyDicom {
       val start = System.currentTimeMillis
       val regWithCBCT = System.getProperty("REGwithCBCT") != null
       println("regWithCBCT: " + regWithCBCT)
+      if (args.size != 2) {
+        println("Usage: treeify inputdir outputdir")
+        System.exit(1)
+      }
       val inDir = new File(args(0))
       val outDir = new File(args(1))
       val fileList = inDir.listFiles.toSeq
