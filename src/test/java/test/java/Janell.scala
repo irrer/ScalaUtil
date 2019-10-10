@@ -30,10 +30,10 @@ object Janell {
     al
   }
 
-  val outStructFile = new File("""D:\tmp\janell\newStruct.dcm""")
+  val outStructFile = new File("""D:\tmp\janell\new\newStruct.dcm""")
 
   val rtstruct = {
-    readFile(new File("""D:\tmp\janell\UTSW_SSET_REVIEWED_POTENC_202.dcm"""))
+    readFile(new File("""D:\tmp\janell\exported\UTSW_SSET_REVIEWED_POTENC_202.dcm"""))
   }
 
   val translate: Map[String, String] = {
@@ -41,6 +41,7 @@ object Janell {
     val frameOfRef = Seq(("1.3.6.1.4.1.22361.17483843788635.454880692.1570630838261.4", "1.3.12.2.1107.5.1.4.100085.30000019100213030088500000008"))
     val structSop = Seq(("1.2.246.352.222.400.4019590799.10516.1570646097.434", UMROGUID.getUID))
     val structSeries = Seq(("1.2.246.352.222.400.4019590799.10516.1570646102.435", UMROGUID.getUID))
+
     val instance = JanellSopUids.before.zip(JanellSopUids.after)
     (series ++ frameOfRef ++ structSop ++ structSeries ++ instance).toMap
   }
@@ -54,8 +55,8 @@ object Janell {
     TagFromName.SOPInstanceUID)
 
   private def writeFile(al: AttributeList, file: File) = {
-    FileMetaInformation.addFileMetaInformation(al, transferSyntax, "irrer")
-    DicomUtil.writeAttributeListToFile(al, file, "irrer")
+    FileMetaInformation.addFileMetaInformation(al, transferSyntax, "JimIrrer")
+    DicomUtil.writeAttributeListToFile(al, file, "JimIrrer")
     println("Created " + file.getAbsolutePath)
   }
 
@@ -72,10 +73,29 @@ object Janell {
     }
   }
 
+  def fixSingles = {
+
+    val singleList = Seq(
+      //      (TagFromName.PatientName, "xxxxxxxxxx"),
+      //      (TagFromName.PatientID, "xxxxxxxxxx"),
+      //      (TagFromName.PatientBirthDate, "18000101"),
+      //      (TagFromName.PatientSex, "O"),
+      (TagFromName.StudyID, "1"))
+
+    singleList.map(s => {
+      val at = rtstruct.get(s._1)
+      at.removeValues
+      at.addValue(s._2)
+    })
+  }
+
   def main(args: Array[String]): Unit = {
     val start = System.currentTimeMillis
 
     atList.map(at => trans(at))
+
+    fixSingles
+
     writeFile(rtstruct, outStructFile)
 
     println("Elapsed ms: " + (System.currentTimeMillis - start))
