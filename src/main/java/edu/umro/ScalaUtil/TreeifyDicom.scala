@@ -37,7 +37,7 @@ object TreeifyDicom {
     try {
       val al = new AttributeList
       al.read(dicomFile)
-      def getAttr(tag: AttributeTag) = al.get(tag).getSingleStringValueOrEmptyString
+      def getAttr(tag: AttributeTag) = new String(al.get(tag).getSingleStringValueOrEmptyString)
 
       Some(new DicomObj(getAttr(TagFromName.PatientID), getAttr(TagFromName.StudyInstanceUID), getAttr(TagFromName.SeriesInstanceUID), getAttr(TagFromName.Modality), dicomFile))
     } catch {
