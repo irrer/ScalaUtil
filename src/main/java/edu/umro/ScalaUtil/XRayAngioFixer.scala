@@ -63,9 +63,20 @@ Note that this means that you must be able to write to this folder.
   }
 
   private def writeLogFile(dir: File) = {
-    val lf = logFile(dir)
-    lf.delete
-    Utility.writeFile(lf, logBuffer.mkString("", "\n", "\n").getBytes)
+    try {
+      val lf = logFile(dir)
+      println("Writing log file to " + lf.getAbsolutePath)
+      lf.delete
+      Utility.writeFile(lf, logBuffer.mkString("", "\n", "\n").getBytes)
+    } catch {
+      case t: Throwable => None
+    }
+  }
+
+  private def failure(t: Throwable) = {
+    val msg = "Unexpected failure: " + fmtEx(t)
+    println(msg)
+    System.exit(1)
   }
 
   private def readFile(file: File): Option[AttributeList] = {
@@ -82,7 +93,7 @@ Note that this means that you must be able to write to this folder.
   private def usage(msg: String) = {
     log(msg)
     println(usageMessage)
-    System.exit(2)
+    System.exit(1)
   }
 
   private def isXRayAngio(al: AttributeList): Boolean = {
@@ -191,6 +202,7 @@ Note that this means that you must be able to write to this folder.
       } catch {
         case t: Throwable => {
           log("unable to write file:\n    " + dicomFile.getAbsolutePath + "\nDo you have permission to write to this folder?" + "\nError: " + t)
+          failure(t)
         }
       }
       log("Created " + dicomFile.getAbsolutePath)
@@ -198,6 +210,7 @@ Note that this means that you must be able to write to this folder.
       case t: Throwable => {
         log("Unexpected error in writeDicom: " + t.getMessage)
         log(fmtEx(t))
+        failure(t)
       }
     }
 
@@ -225,6 +238,7 @@ Note that this means that you must be able to write to this folder.
       case t: Throwable => {
         log("Unexpected error in makeImage: " + t.getMessage)
         log(fmtEx(t))
+        failure(t)
       }
     }
   }
@@ -239,6 +253,7 @@ Note that this means that you must be able to write to this folder.
           dicomFileName + ".html"
       }
       val htmlFile = new File(htmlDir, htmlFileName)
+      htmlFile.delete
 
       val content = {
         <html>
@@ -269,6 +284,7 @@ Note that this means that you must be able to write to this folder.
       case t: Throwable => {
         log("Unexpected error in makeImage: " + t.getMessage)
         log(fmtEx(t))
+        failure(t)
       }
     }
   }
@@ -318,17 +334,18 @@ Note that this means that you must be able to write to this folder.
 
   private def fixDir(dir: File) = {
     try {
+      log("Processing directory " + dir.getAbsolutePath)
       if (dir.canRead && dir.canWrite && dir.isDirectory) {
         val outDir = new File(dir, outputDirName)
-        Utility.deleteFileTree(outDir)
+        //Utility.deleteFileTree(outDir)
 
         val reportDir = new File(dir, htmlFileDirName)
-        Utility.deleteFileTree(reportDir)
-
-        val fileDicomList = dir.listFiles.sortBy(f => f.lastModified).map(f => makeFileDicom(f)).flatten
+        //Utility.deleteFileTree(reportDir)
 
         outDir.mkdirs
         reportDir.mkdirs
+
+        val fileDicomList = dir.listFiles.sortBy(f => f.lastModified).map(f => makeFileDicom(f)).flatten
 
         fileDicomList.map(fd => fixDicom(fd))
         fileDicomList.map(fd => writeDicom(outDir, fd))
@@ -344,29 +361,31 @@ Note that this means that you must be able to write to this folder.
     } catch {
       case t: Throwable => {
         log("Unexpected error in fixDir: " + t.getMessage)
-        log(fmtEx(t))
+        failure(t)
       }
     }
   }
 
   def main(args: Array[String]): Unit = {
     try {
-
       val start = System.currentTimeMillis
+      println("Starting " + args.mkString(" "))
       if (args.size == 0) usage("No parameters given")
 
-      if (args.size > 1) usage("Only one folder may be processed at a time.")
+      val dirName = args.mkString(" ")
+      //if (args.size > 1) usage("Only one folder may be processed at a time.")
 
-      val inDir = new File(args.head)
+      val inDir = new File(dirName)
       fixDir(inDir)
 
       writeLogFile(inDir)
 
       println("Elapsed ms: " + (System.currentTimeMillis - start))
+      System.exit(0)
     } catch {
       case t: Throwable =>
         log("Unexpected error: " + t.getMessage)
-        log(fmtEx(t))
+        failure(t)
     }
 
   }
