@@ -491,9 +491,7 @@ object DicomUtil {
    * Detect different types (models) of treatment machines.
    */
   object TreatmentMachineType extends Enumeration {
-    val Truebeam = Value
-    val Halcyon = Value
-    val ClinacC = Value
+    val Truebeam, Halcyon, ClinacC = Value
 
     private val truebeamNameList = Seq("TDS")
     private val halcyonNameList = Seq("RDS")
