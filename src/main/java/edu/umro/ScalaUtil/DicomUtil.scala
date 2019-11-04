@@ -488,33 +488,75 @@ object DicomUtil {
   }
 
   /**
+   * Detect different types (models) of treatment machines.
+   */
+  object TreatmentMachineType extends Enumeration {
+    val Truebeam = Value
+    val Halcyon = Value
+    val ClinacC = Value
+
+    private val truebeamNameList = Seq("TDS")
+    private val halcyonNameList = Seq("RDS")
+    private val clinacCNameList = Seq("2300IX")
+
+    /**
+     * Given an attribute list, return the type of treatment machine.
+     *
+     * Note that the ManufacturerModelName at the top level can often be incorrect, so it is better to
+     * use the values from the BeamSequence.
+     */
+    def attrListToTreatmentMachineType(al: AttributeList): Option[TreatmentMachineType.Value] = {
+      val mainMMN = al.get(TagFromName.ManufacturerModelName).getSingleStringValueOrEmptyString.trim.toUpperCase
+
+      // get a list of all referenced models
+      val ManufacturerModelNameList =
+        findAllSingle(al, TagFromName.ManufacturerModelName).
+          map(a => a.getSingleStringValueOrEmptyString.toUpperCase.trim).
+          distinct.
+          filterNot(tmt => tmt.equals("")).
+          filterNot(tmt => tmt.equals(mainMMN)).
+          toSeq
+
+      val tmt = ManufacturerModelNameList match {
+        case _ if ManufacturerModelNameList.isEmpty => None
+        case _ if truebeamNameList.contains(ManufacturerModelNameList.head) => Some(Truebeam)
+        case _ if halcyonNameList.contains(ManufacturerModelNameList.head) => Some(Halcyon)
+        case _ if clinacCNameList.contains(ManufacturerModelNameList.head) => Some(ClinacC)
+        case _ => None
+      }
+      tmt
+    }
+  }
+
+  /**
    * Self test.
    */
   def main(args: Array[String]): Unit = {
 
     val a = new AttributeList
     a.read("""D:\pf\eclipse\workspaceOxygen\ScalaUtil\src\test\resources\vessel_a.dcm""")
-    val b = new AttributeList
-    b.read("""D:\pf\eclipse\workspaceOxygen\ScalaUtil\src\test\resources\vessel_b.dcm""")
-
-    println("compareDicom(a,b) should be -1: " + compareDicom(a, b))
-    println("compareDicom(b,a) should be  1: " + compareDicom(b, a))
-    println("compareDicom(a,a) should be  0: " + compareDicom(a, a))
-
-    val copyA = clone(a)
-    println("compareDicom(a,copyA) should be  0: " + compareDicom(a, copyA))
-
-    val aText = a.toString.replace('\0', ' ')
-    val copyAText = copyA.toString.replace('\0', ' ')
-
-    println("Should be true: " + aText.equals(copyAText))
-
-    System.exit(99)
-
-    val name = "Smith^John    ^Q"
-    println("DICOM name: " + name)
-    val dpn = parseDicomPersonName(name)
-    println("dpn: " + dpn)
+    //    a.read("""D:\pf\eclipse\workspaceOxygen\ScalaUtil\src\test\resources\vessel_a.dcm""")
+    //    val b = new AttributeList
+    //    b.read("""D:\pf\eclipse\workspaceOxygen\ScalaUtil\src\test\resources\vessel_b.dcm""")
+    //
+    //    println("compareDicom(a,b) should be -1: " + compareDicom(a, b))
+    //    println("compareDicom(b,a) should be  1: " + compareDicom(b, a))
+    //    println("compareDicom(a,a) should be  0: " + compareDicom(a, a))
+    //
+    //    val copyA = clone(a)
+    //    println("compareDicom(a,copyA) should be  0: " + compareDicom(a, copyA))
+    //
+    //    val aText = a.toString.replace('\0', ' ')
+    //    val copyAText = copyA.toString.replace('\0', ' ')
+    //
+    //    println("Should be true: " + aText.equals(copyAText))
+    //
+    //    System.exit(99)
+    //
+    //    val name = "Smith^John    ^Q"
+    //    println("DICOM name: " + name)
+    //    val dpn = parseDicomPersonName(name)
+    //    println("dpn: " + dpn)
   }
 
 }
