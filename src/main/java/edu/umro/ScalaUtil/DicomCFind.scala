@@ -29,8 +29,28 @@ import com.pixelmed.network.AReleaseException
 
 object DicomCFind extends IdentifierHandler with Logging {
 
-  private val defaultQueryInformationModel = SOPClass.StudyRootQueryRetrieveInformationModelFind
-  private val defaultQueryLevel = "SERIES"
+  object QueryRetrieveLevel extends Enumeration {
+    val STUDY = Value
+    val SERIES = Value
+    val IMAGE = Value
+  }
+
+  object QueryRetrieveInformationModel extends Enumeration {
+    val StudyRoot = Value
+    val PatientRoot = Value
+    val PatientStudyOnly = Value
+
+    def sopClassOf(qrim: QueryRetrieveInformationModel.Value) = {
+      qrim match {
+        case StudyRoot => SOPClass.StudyRootQueryRetrieveInformationModelFind
+        case PatientRoot => SOPClass.PatientRootQueryRetrieveInformationModelFind
+        case PatientStudyOnly => SOPClass.PatientStudyOnlyQueryRetrieveInformationModelFind
+      }
+    }
+  }
+
+  private val defaultQueryInformationModel = QueryRetrieveInformationModel.StudyRoot //  SOPClass.StudyRootQueryRetrieveInformationModelFind
+  private val defaultQueryLevel = QueryRetrieveLevel.SERIES
 
   /**
    * Handle the incoming C-FIND results.
@@ -72,28 +92,31 @@ object DicomCFind extends IdentifierHandler with Logging {
    */
 
   def cfind(callingAETitle: String, calledPacs: PACS, attributeList: AttributeList,
-    queryLevel: String = defaultQueryLevel,
+    queryLevel: QueryRetrieveLevel.Value = QueryRetrieveLevel.SERIES,
     limit: Option[Int] = None,
-    affectedSOPClass: String = defaultQueryInformationModel): Seq[AttributeList] = {
+    queryRetrieveInformationModel: QueryRetrieveInformationModel.Value = defaultQueryInformationModel): Seq[AttributeList] = {
 
+    val affectedSOPClass = QueryRetrieveInformationModel.sopClassOf(queryRetrieveInformationModel)
     // use a copy so as not to modify caller's copy
     val attrList = DicomUtil.clone(attributeList)
 
     // ensure that the query level is given
-    val queryLevel = AttributeFactory.newAttribute(TagFromName.QueryRetrieveLevel)
-    queryLevel.addValue(defaultQueryLevel)
-    attrList.put(queryLevel)
+    val queryLevelAt = AttributeFactory.newAttribute(TagFromName.QueryRetrieveLevel)
+    queryLevelAt.addValue(queryLevel.toString)
+    attrList.put(queryLevelAt)
 
-    val association = FindSOPClassSCU.getSuitableAssociation(calledPacs.host, calledPacs.port, calledPacs.aeTitle, callingAETitle, affectedSOPClass)
-
-    val identHandler = new IdentHandler(limit, association)
     try {
+      val association = FindSOPClassSCU.getSuitableAssociation(calledPacs.host, calledPacs.port, calledPacs.aeTitle, callingAETitle, affectedSOPClass)
+
+      val identHandler = new IdentHandler(limit, association)
       new FindSOPClassSCU(association, affectedSOPClass, attrList, identHandler)
+      identHandler.get
     } catch {
-      case t: Throwable => logger.info("Problem: " + fmtEx(t)) // TODO make better
+      case t: Throwable =>
+        logger.info("Problem: " + fmtEx(t)) // TODO make better
+        Seq[AttributeList]()
     }
 
-    identHandler.get
   }
 
   def main(args: Array[String]): Unit = {
@@ -120,18 +143,118 @@ object DicomCFind extends IdentifierHandler with Logging {
     if (true) {
       val a = AttributeFactory.newAttribute(TagFromName.Modality)
       //a.addValue("RTIMAGE")
-      //a.addValue("PLAN")
-      a.addValue("REG")
+      a.addValue("RTPLAN")
+      //a.addValue("CT")
+      //a.addValue("REG")
       //a.addValue("RTRECORD")
       al.put(a)
     }
 
-    val resultList = cfind(callingAETitle, calledPacs, al, "SERIES", Some(50))
+    if (true) {
+      val a = AttributeFactory.newAttribute(TagFromName.SOPInstanceUID)
+      al.put(a)
+    }
 
-    println("Number of results: " + resultList.size)
+    if (true) {
+      val a = AttributeFactory.newAttribute(TagFromName.NumberOfBeams)
+      al.put(a)
+    }
 
-    println(resultList.map(r => r.toString.replace('\0', ' ')).mkString("\n"))
-    println("\nNumber of results: " + resultList.size)
+    if (true) {
+      val a = AttributeFactory.newAttribute(TagFromName.RTPlanTime)
+      al.put(a)
+    }
+
+    if (true) {
+      val a = AttributeFactory.newAttribute(TagFromName.RTPlanLabel)
+      //      a.addValue("20190628")
+      al.put(a)
+    }
+
+    if (true) {
+      val a = AttributeFactory.newAttribute(TagFromName.PatientName)
+      //      a.addValue("20190628")
+      al.put(a)
+    }
+
+    if (true) {
+      val a = AttributeFactory.newAttribute(TagFromName.InstanceCreationDate)
+      //      a.addValue("20190628")
+      al.put(a)
+    }
+
+    if (true) {
+      val a = AttributeFactory.newAttribute(TagFromName.SeriesInstanceUID)
+      //a.addValue("1.2.246.352.62.2.5521482476547391701.18195090857756125851")
+      al.put(a)
+    }
+
+    if (true) {
+      val a = AttributeFactory.newAttribute(TagFromName.SeriesDescription)
+      //      a.addValue("20190628")
+      al.put(a)
+    }
+
+    if (true) {
+      val a = AttributeFactory.newAttribute(TagFromName.StudyInstanceUID)
+      //      a.addValue("20190628")
+      al.put(a)
+    }
+
+    if (true) {
+      val a = AttributeFactory.newAttribute(TagFromName.StudyDescription)
+      //      a.addValue("20190628")
+      al.put(a)
+    }
+
+    if (true) {
+      val a = AttributeFactory.newAttribute(TagFromName.RTPlanDate)
+      al.put(a)
+    }
+
+    if (true) {
+      val a = AttributeFactory.newAttribute(TagFromName.RTPlanDescription)
+      al.put(a)
+    }
+
+    if (true) {
+      val a = AttributeFactory.newAttribute(TagFromName.StudyDate)
+      //      a.addValue("20160214")
+      al.put(a)
+    }
+
+    if (true) {
+      val a = AttributeFactory.newAttribute(TagFromName.AcquisitionDate)
+      //      a.addValue("20190517")
+      al.put(a)
+    }
+
+    if (true) {
+      val a = AttributeFactory.newAttribute(TagFromName.ContentDate)
+      //      a.addValue("20190517")
+      al.put(a)
+    }
+
+    println("query:\n--------------------------------\n" + al + "--------------------------------")
+
+    for (qrl <- QueryRetrieveLevel.values; qrim <- QueryRetrieveInformationModel.values) {
+      println("query level: " + qrl + "    query retrieve info model: " + qrim)
+      val resultList = cfind(
+        callingAETitle, // callingAETitle
+        calledPacs, // calledPacs
+        al, // attributeList
+        qrl, // queryLevel
+        Some(10), // limit
+        qrim)
+
+      println("Number of results: " + resultList.size)
+
+      println(resultList.map(r => r.toString.replace('\0', ' ')).mkString("\n"))
+      println("\nNumber of results: " + resultList.size)
+      println("-----------------------------------------------------------------------------------------")
+      println("-----------------------------------------------------------------------------------------")
+      Thread.sleep(500)
+    }
 
     val elapsed = System.currentTimeMillis - start
     println("Done.  Elapsed time in ms: " + elapsed)

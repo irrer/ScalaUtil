@@ -332,20 +332,35 @@ Note that this means that you must be able to write to this folder.
     Utility.writeFile(indexHtmlFile, text.getBytes)
   }
 
+  private def findAllChildFiles(dir: File): Seq[File] = {
+    val list = dir.listFiles.toSeq
+    val all = list.filter(f => f.isFile) ++ (list.filter(f => f.isDirectory).map(d => findAllChildFiles(d))).flatten
+    all
+  }
+
+  private def deleteOldFiles(dirList: Seq[File]) = {
+    
+    val timeout = System.currentTimeMillis + (10 * 1000)
+    while (dirList.map(d => d.exists).reduce(_ || _) && (System.currentTimeMillis < timeout)) {
+      dirList.map(d => Utility.deleteFileTree(d))
+      Thread.sleep(1000)
+    }
+  }
+
   private def fixDir(dir: File) = {
     try {
       log("Processing directory " + dir.getAbsolutePath)
       if (dir.canRead && dir.canWrite && dir.isDirectory) {
         val outDir = new File(dir, outputDirName)
-        //Utility.deleteFileTree(outDir)
-
         val reportDir = new File(dir, htmlFileDirName)
-        //Utility.deleteFileTree(reportDir)
+        deleteOldFiles(Seq(outDir, reportDir))
 
         outDir.mkdirs
         reportDir.mkdirs
 
-        val fileDicomList = dir.listFiles.sortBy(f => f.lastModified).map(f => makeFileDicom(f)).flatten
+        val fileList = findAllChildFiles(dir).sortBy(f => f.lastModified)
+        Trace.trace("fileList:\n    " + fileList.map(f => f.getName).mkString("\n    "))
+        val fileDicomList = fileList.map(f => makeFileDicom(f)).flatten
 
         fileDicomList.map(fd => fixDicom(fd))
         fileDicomList.map(fd => writeDicom(outDir, fd))

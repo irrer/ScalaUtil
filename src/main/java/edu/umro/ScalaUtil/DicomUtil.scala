@@ -498,17 +498,17 @@ object DicomUtil {
     private val clinacCNameList = Seq("2300IX")
 
     /**
-     * Given an attribute list, return the type of treatment machine.
+     * Given an RTPLAN attribute list, return the type of treatment machine.
      *
      * Note that the ManufacturerModelName at the top level can often be incorrect, so it is better to
      * use the values from the BeamSequence.
      */
-    def attrListToTreatmentMachineType(al: AttributeList): Option[TreatmentMachineType.Value] = {
-      val mainMMN = al.get(TagFromName.ManufacturerModelName).getSingleStringValueOrEmptyString.trim.toUpperCase
+    def attrListToTreatmentMachineType(rtplan: AttributeList): Option[TreatmentMachineType.Value] = {
+      val mainMMN = rtplan.get(TagFromName.ManufacturerModelName).getSingleStringValueOrEmptyString.trim.toUpperCase
 
       // get a list of all referenced models
       val ManufacturerModelNameList =
-        findAllSingle(al, TagFromName.ManufacturerModelName).
+        findAllSingle(rtplan, TagFromName.ManufacturerModelName).
           map(a => a.getSingleStringValueOrEmptyString.toUpperCase.trim).
           distinct.
           filterNot(tmt => tmt.equals("")).
@@ -524,6 +524,12 @@ object DicomUtil {
       }
       tmt
     }
+  }
+
+  def isHalcyon(rtplan: AttributeList): Boolean = {
+    val treatmentMachineType = TreatmentMachineType.attrListToTreatmentMachineType(rtplan)
+    val isHalcy = treatmentMachineType.isDefined && treatmentMachineType.get.toString.equals(TreatmentMachineType.Halcyon.toString)
+    isHalcy
   }
 
   /**
