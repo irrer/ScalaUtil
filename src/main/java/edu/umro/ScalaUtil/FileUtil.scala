@@ -256,6 +256,40 @@ object FileUtil {
     }
   }
 
+  /**
+   * Global lock for synchronizing all file writes so that only one write is being done at
+   *  a time (as opposed to being done in parallel).
+   */
+  private val fileSystemWriteSync = "sync"
+
+  def writeBinaryFile(file: File, data: Array[Byte]): Unit = fileSystemWriteSync.synchronized({
+    file.delete
+    val fos = new FileOutputStream(file)
+    fos.write(data)
+    fos.flush
+    fos.close
+  })
+
+  def writeFile(file: File, text: String): Unit = writeBinaryFile(file, text.getBytes)
+
+  def readBinaryFile(file: File): Either[Throwable, Array[Byte]] = {
+    try {
+      val fis = new FileInputStream(file)
+      val buf = new Array[Byte](file.length.toInt)
+      fis.read(buf)
+      fis.close
+      Right(buf)
+    } catch {
+      case t: Throwable => Left(t)
+    }
+  }
+
+  def readTextFile(file: File): Either[Throwable, String] = {
+    val result = readBinaryFile(file)
+    if (result.isLeft) Left(result.left.get)
+    else Right(new String(result.right.get))
+  }
+
   def main(args: Array[String]): Unit = { // TODO rm
     // add comment to test git
     val j = edu.umro.ScalaUtil.FileUtil.replaceInvalidFileNameCharacters("oasijdfoaj", 'X')
