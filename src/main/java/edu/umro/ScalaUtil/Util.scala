@@ -39,6 +39,8 @@ object Util {
     new SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss"))
 
   def dateToText(date: Date): String = standardDateFormatList(0).format(date)
+  
+  def standardFormat(date: Date) = dateToText(date)
 
   def textToDate(text: String): Date = {
     val maxTextLength = 23
