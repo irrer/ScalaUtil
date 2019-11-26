@@ -290,6 +290,20 @@ object FileUtil {
     else Right(new String(result.right.get))
   }
 
+  /**
+   * Get the suffix of the given file name.
+   *
+   * If the file name ends in '.' or has no '.' then an empty string is returned.
+   *
+   */
+  def getFileSuffix(fileName: String): String = {
+    if (fileName.contains('.'))
+      FileUtil.replaceInvalidFileNameCharacters(fileName, '_').replaceAll(".*\\.", "")
+    else ""
+  }
+
+  def getFileSuffix(file: File): String = getFileSuffix(file.getName)
+
   def main(args: Array[String]): Unit = { // TODO rm
     // add comment to test git
     val j = edu.umro.ScalaUtil.FileUtil.replaceInvalidFileNameCharacters("oasijdfoaj", 'X')
