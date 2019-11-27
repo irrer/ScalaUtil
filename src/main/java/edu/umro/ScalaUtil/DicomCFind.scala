@@ -109,7 +109,7 @@ object DicomCFind extends IdentifierHandler with Logging {
       val association = FindSOPClassSCU.getSuitableAssociation(calledPacs.host, calledPacs.port, calledPacs.aeTitle, callingAETitle, affectedSOPClass)
 
       val identHandler = new IdentHandler(limit, association)
-      new FindSOPClassSCU(association, affectedSOPClass, attrList, identHandler)
+      val findSOPClassSCU = new FindSOPClassSCU(association, affectedSOPClass, attrList, identHandler)
       identHandler.get
     } catch {
       case t: Throwable =>
