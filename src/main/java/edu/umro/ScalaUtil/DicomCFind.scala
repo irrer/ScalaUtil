@@ -111,7 +111,6 @@ object DicomCFind extends IdentifierHandler with Logging {
       val identHandler = new IdentHandler(limit, association)
       val findSOPClassSCU = new FindSOPClassSCU(association, affectedSOPClass, attrList, identHandler)
       val list = identHandler.get
-      Trace.trace("releasing C-FIND association")
       association.release
       list
     } catch {
