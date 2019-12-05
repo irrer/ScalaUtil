@@ -339,11 +339,27 @@ Note that this means that you must be able to write to this folder.
   }
 
   private def deleteOldFiles(dirList: Seq[File]) = {
-    
+
     val timeout = System.currentTimeMillis + (10 * 1000)
     while (dirList.map(d => d.exists).reduce(_ || _) && (System.currentTimeMillis < timeout)) {
       dirList.map(d => Utility.deleteFileTree(d))
       Thread.sleep(1000)
+    }
+  }
+
+  def process(f: File, outDir: File, reportDir: File) = {
+    makeFileDicom(f) match {
+      case Some(fd) => {
+        fixDicom(fd)
+        writeDicom(outDir, fd)
+        makeImage(reportDir, fd)
+        makeDicomHtml(reportDir, fd)
+        Runtime.getRuntime.gc
+        Thread.sleep(50)
+        Runtime.getRuntime.gc
+        Thread.sleep(50)
+      }
+      case _ =>
     }
   }
 
@@ -360,13 +376,8 @@ Note that this means that you must be able to write to this folder.
 
         val fileList = findAllChildFiles(dir).sortBy(f => f.lastModified)
         Trace.trace("fileList:\n    " + fileList.map(f => f.getName).mkString("\n    "))
-        val fileDicomList = fileList.map(f => makeFileDicom(f)).flatten
 
-        fileDicomList.map(fd => fixDicom(fd))
-        fileDicomList.map(fd => writeDicom(outDir, fd))
-
-        fileDicomList.map(fd => makeImage(reportDir, fd))
-        fileDicomList.map(fd => makeDicomHtml(reportDir, fd))
+        fileList.map(f => process(f, outDir, reportDir))
 
         makeHtml(outDir, reportDir)
 
