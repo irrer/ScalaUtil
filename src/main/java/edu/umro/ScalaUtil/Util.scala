@@ -18,6 +18,11 @@ object Util {
     UUID.randomUUID.toString
   }
 
+  /**
+   * System independent line separator.
+   */
+  val LS = System.getProperty("line.separator")
+  
   def xmlToText(document: Elem): String = new PrettyPrinter(1024, 2).format(document)
 
   /**
