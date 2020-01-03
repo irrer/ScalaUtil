@@ -23,8 +23,8 @@ import edu.umro.ScalaUtil.FileUtil
 object ForKar {
 
   val mainDir = new File("""D:\tmp\kim""")
-  val inDir = new File(mainDir, "forkaren")
-  val outDir = new File(mainDir, "outkar")
+  val inDir = new File(mainDir, "032_BrightS")
+  val outDir = new File(mainDir, "032_BrightSfixed")
 
   private var rtstructIndex = 1
 
@@ -76,9 +76,16 @@ object ForKar {
       refSop.addValue(uid)
     }
 
+    def fixSopInstanceUid = {
+      val sop = rtstruct.get(TagFromName.SOPInstanceUID)
+      sop.removeValues
+      sop.addValue(UMROGUID.getUID)
+    }
+
+    fixSopInstanceUid
     contourSeq.zip(uidList).map(contourUid => fixContour(contourUid._1, contourUid._2))
 
-    val file = new File(outDir, "RTSTRUCT_" + rtstructIndex)
+    val file = new File(outDir, "RTSTRUCT_" + rtstructIndex + ".dcm")
     rtstructIndex = rtstructIndex + 1
     writeFile(rtstruct, file)
     Trace.trace("wrote file " + file.getAbsolutePath)
