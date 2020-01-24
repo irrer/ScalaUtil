@@ -73,11 +73,25 @@ object Julia {
 
   private def seriesUidOf(al: AttributeList) = al.get(TagFromName.SeriesInstanceUID).getSingleStringValueOrEmptyString
 
-  private def frameOfRefOf(al: AttributeList) = {
-    DicomUtil.findAllSingle(al, TagFromName.FrameOfReferenceUID).headOption match {
-      case Some(at) => at.getSingleStringValueOrEmptyString
-      case _ => "none"
+  private def frameOfRefOf(al: AttributeList): String = {
+    val list = DicomUtil.findAllSingle(al, TagFromName.FrameOfReferenceUID).map(at => at.getSingleStringValueOrEmptyString)
+
+    if (modalityOf(al).equals("REG") && (list.size > 1)) {
+      val mainFrmOfRef = al.get(TagFromName.FrameOfReferenceUID).getSingleStringValueOrEmptyString
+      list.filterNot(frmOfRef => frmOfRef.eq(mainFrmOfRef)).head
+    } else {
+      if (list.isEmpty)
+        "none"
+      else
+        list.head
     }
+  }
+
+  private def refPlanOf(al: AttributeList): String = {
+    if (al.get(TagFromName.ReferencedRTPlanSequence) != null) {
+      val refSeq = DicomUtil.seqToAttr(al, TagFromName.ReferencedRTPlanSequence).head.get(TagFromName.ReferencedSOPInstanceUID).getSingleStringValueOrEmptyString
+      refSeq
+    } else ""
   }
 
   private class DcmFl(f: File, al: AttributeList) {
@@ -86,6 +100,7 @@ object Julia {
     val sop = new String(sopOf(al))
     val seriesUid = new String(seriesUidOf(al))
     val frameOfRef = new String(frameOfRefOf(al))
+    val referencedPlan = new String(refPlanOf(al))
     val zPos = zPosOf(al) + 0
 
     def copyTo(dest: File) = {
@@ -135,17 +150,58 @@ object Julia {
     rtplanDM.copyTo(dest)
   }
 
-  private def fix(frmOfRef: String, frmOfRefIndex: Int, allDcm: Seq[DcmFl], outDir: File) = {
-    val ctList = allDcm.filter(d => d.frameOfRef.equals(frmOfRef) && d.modality.equals("CT")).sortBy(d => d.zPos)
-    saveCtList(ctList, frmOfRefIndex, outDir)
+  private def saveRtimage(rtimageDM: DcmFl, outDir: File, frmOfRefIndex: Int, rtimageIndex: Int) = {
+    val dest = new File(outDir, "RTIMAGE_" + fmt(frmOfRefIndex) + "-" + fmt(rtimageIndex) + ".dcm")
+    rtimageDM.copyTo(dest)
+  }
 
-    val rtstructList = allDcm.filter(d => d.frameOfRef.equals(frmOfRef) && d.modality.equals("RTSTRUCT"))
+  private def saveReg(regDM: DcmFl, outDir: File, frmOfRefIndex: Int, regIndex: Int) = {
+    val dest = new File(outDir, "REG_" + fmt(frmOfRefIndex) + "-" + fmt(regIndex) + ".dcm")
+    regDM.copyTo(dest)
+  }
+
+  private def saveRtdose(rtdoseDM: DcmFl, outDir: File, frmOfRefIndex: Int, rtdoseIndex: Int) = {
+    val dest = new File(outDir, "RTDOSE_" + fmt(frmOfRefIndex) + "-" + fmt(rtdoseIndex) + ".dcm")
+    rtdoseDM.copyTo(dest)
+  }
+
+  private def saveRtrecord(regDM: DcmFl, outDir: File, frmOfRefIndex: Int, rtrecordIndex: Int) = {
+    val dest = new File(outDir, "RTRECORD_" + fmt(frmOfRefIndex) + "-" + fmt(rtrecordIndex) + ".dcm")
+    regDM.copyTo(dest)
+  }
+
+  private def getByRefPlan(frmOfRef: String, rtplanList: Seq[DcmFl], allDcm: Seq[DcmFl]): Seq[DcmFl] = {
+    val rtplanSopList = rtplanList.map(rtplan => rtplan.sop)
+    allDcm.filter(d => rtplanSopList.contains(d.referencedPlan))
+  }
+
+  private def fix(frmOfRef: String, frmOfRefIndex: Int, allDcm: Seq[DcmFl], outDir: File) = {
+    val frmOfRefDir = new File(outDir, "FrmofRef_" + fmt(frmOfRefIndex))
+    val frmOfRefList = allDcm.filter(d => d.frameOfRef.equals(frmOfRef))
+    val ctList = frmOfRefList.filter(d => d.modality.equals("CT")).sortBy(d => d.zPos)
+    saveCtList(ctList, frmOfRefIndex, frmOfRefDir)
+
+    val rtstructList = frmOfRefList.filter(d => d.modality.equals("RTSTRUCT"))
     // private def fixRtstruct(rtstructDF: DcmFl, outDir : File, index: Int, frameOfRefIndex: Int, rtstructIndex: Int, ctList: Seq[DcmFl]) = {
-    rtstructList.zipWithIndex.map(di => fixRtstruct(di._1, outDir, frmOfRefIndex, (di._2) + 1, ctList))
+    rtstructList.zipWithIndex.map(di => fixRtstruct(di._1, frmOfRefDir, frmOfRefIndex, (di._2) + 1, ctList))
 
     val rtplanList = allDcm.filter(d => d.frameOfRef.equals(frmOfRef) && d.modality.equals("RTPLAN"))
     // private def fixRtstruct(rtstructDF: DcmFl, outDir : File, index: Int, frameOfRefIndex: Int, rtstructIndex: Int, ctList: Seq[DcmFl]) = {
-    rtplanList.zipWithIndex.map(di => saveRtplan(di._1, outDir, frmOfRefIndex, (di._2) + 1))
+    rtplanList.zipWithIndex.map(di => saveRtplan(di._1, frmOfRefDir, frmOfRefIndex, (di._2) + 1))
+
+    val rtimageList = frmOfRefList.filter(d => d.modality.equals("RTIMAGE"))
+    rtimageList.zipWithIndex.map(di => saveRtimage(di._1, frmOfRefDir, frmOfRefIndex, (di._2) + 1))
+
+    val regList = frmOfRefList.filter(d => d.modality.equals("REG"))
+    regList.zipWithIndex.map(di => saveReg(di._1, frmOfRefDir, frmOfRefIndex, (di._2) + 1))
+
+    val refRtplanList = getByRefPlan(frmOfRef, rtplanList, allDcm).filter(d => d.modality.equals("RTRECORD") || d.modality.equals("RTDOSE"))
+
+    val rtdoseList = refRtplanList.filter(d => d.modality.equals("RTDOSE"))
+    rtdoseList.zipWithIndex.map(di => saveRtdose(di._1, frmOfRefDir, frmOfRefIndex, (di._2) + 1))
+
+    val rtrecordList = refRtplanList.filter(d => d.modality.equals("RTRECORD"))
+    rtrecordList.zipWithIndex.map(di => saveRtrecord(di._1, frmOfRefDir, frmOfRefIndex, (di._2) + 1))
   }
 
   private def saveOther(allDcm: Seq[DcmFl], outDir: File) = {
@@ -153,6 +209,10 @@ object Julia {
     val byModality = allDcm.filter(d =>
       (!d.modality.equals("CT")) &&
         (!d.modality.equals("RTSTRUCT")) &&
+        (!d.modality.equals("RTIMAGE")) &&
+        (!d.modality.equals("REG")) &&
+        (!d.modality.equals("RTRECORD")) &&
+        (!d.modality.equals("RTDOSE")) &&
         (!d.modality.equals("RTPLAN")))
 
     def saveSeries(series: Seq[DcmFl], seriesIndex: Int) = {
@@ -207,11 +267,11 @@ object Julia {
     // read meta data and remove duplicate SOPs
     val allDcm = allFiles.map(f => new DcmFl(f, readFile(f))).groupBy(_.sop).map(_._2.head).toSeq
 
-    val frmOfRefList = allDcm.map(d => d.frameOfRef).distinct.filter(_.size > 5)
+    val frmOfRefList = allDcm.map(d => d.frameOfRef).distinct
 
     frmOfRefList.zipWithIndex.map(frmOfRefIdx => fix(frmOfRefIdx._1, frmOfRefIdx._2 + 1, allDcm, outDir))
 
-    saveOther(allDcm, outDir)
+    //saveOther(allDcm, outDir)
 
     println(mainDir.getName + "  Elapsed ms: " + (System.currentTimeMillis - start))
   }

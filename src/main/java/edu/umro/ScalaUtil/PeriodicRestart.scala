@@ -81,8 +81,9 @@ class PeriodicRestart(restartTime: Long) extends Runnable with Logging {
     System.exit(1)
   }
 
+  logger.info("Starting periodic restart thread.")
   (new Thread(this)).start
-
+  logger.info("Periodic restart thread is running.")
 }
 
 object PeriodicRestart extends Logging {
