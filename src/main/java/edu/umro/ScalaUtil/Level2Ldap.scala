@@ -106,13 +106,48 @@ object Level2Ldap {
     }
   }
 
+  case class UserInfo(lastName: String, firstName: String, email: String) {
+    override def toString: String = lastName + ", " + firstName + " at " + email
+  }
+
   /**
-   * Determine if the context is valid.
+   * Get list of the groups in the attribute list and set them to lower case.
+   *
+   * @param attributes
+   *
+   * @return List of the groups in the attribute list set to lower case.
+   */
+  private def extractUserInfo(namingEnum: NamingEnumeration[SearchResult]): Either[String, UserInfo] = {
+    try {
+      val entryList = namingEnum.asScala.toList
+
+      val attributesList = entryList.map(entry => entry.getAttributes)
+
+      val attrList = attributesList.map(attr => attr.getAll.asScala).flatten
+
+      def get(tag: String): String = {
+        attrList.find { a => a.getID.equalsIgnoreCase(tag) }.get.get.asInstanceOf[String]
+      }
+
+      val givenName = get("givenName")
+      val sn = get("sn")
+      val mail = get("mail")
+
+      Right(new UserInfo(sn, givenName, mail))
+    } catch {
+      case t: Throwable => {
+        Left("Unexpected exception while getting groups from LDAP reply: " + t)
+      }
+    }
+  }
+
+  /**
+   * Get the list of groups that the user is a member of.
    *
    * @param environment
    *            LDAP properties.
    *
-   * @return True on valid, false if not.
+   * @return Either Left with error message or Right with list of groups.
    */
   def getGroupListOfUser(userId: String, secret: String): Either[String, Set[String]] = {
 
@@ -144,6 +179,52 @@ object Level2Ldap {
         val groupList = extractGroupList(nl)
         closeDirContext(dc)
         groupList
+      } else Left(dirContext.left.get)
+
+    } catch {
+      case t: Throwable => Left("Unexpected exception while getting connecting to LDAP server: " + t)
+
+    }
+  }
+
+  /**
+   * Get the list of groups that the user is a member of.
+   *
+   * @param environment
+   *            LDAP properties.
+   *
+   * @return Either Left with error message or Right with list of groups.
+   */
+  def getUserInfo(userId: String, secret: String): Either[String, UserInfo] = {
+
+    val empty = Set[String]()
+    val environment = basicProperties
+
+    environment.put(Context.SECURITY_AUTHENTICATION, "simple")
+    val securityPrincipal = umichMedQuery(userId)
+    environment.put(Context.SECURITY_PRINCIPAL, securityPrincipal)
+    // Note: If the following SECURITY_CREDENTIALS property is not set, then
+    // it does not password authenticate.
+    environment.put(Context.SECURITY_CREDENTIALS, secret)
+
+    try {
+      val dirContext = openDirContext(environment)
+      if (dirContext.isRight) {
+        val dc = dirContext.right.get
+
+        val constraints = new SearchControls
+        constraints.setSearchScope(SearchControls.SUBTREE_SCOPE)
+        // set dereference aliases to put less load on server
+        constraints.setDerefLinkFlag(false)
+
+        val returnedAttributes = Array("sn", "givenName", "mail")
+        constraints.setReturningAttributes(returnedAttributes)
+        // construct the LDAP filter
+        val filter = "uid=" + userId
+        val nl = dc.search(baseSearchContext, filter, constraints)
+        val userInfo = extractUserInfo(nl)
+        closeDirContext(dc)
+        userInfo
       } else Left(dirContext.left.get)
 
     } catch {
@@ -212,6 +293,9 @@ object Level2Ldap {
     val grps = Level2Ldap.getGroupListOfUser(userId, secret)
     if (grps.isRight) grps.right.get.toList.sorted.map { g => println("    " + g) }
     else println("  :(  no groups: " + grps.left.get)
+
+    val userInfo = Level2Ldap.getUserInfo(userId, secret)
+    println("user info: " + userInfo)
 
     System.out.println("Done")
     System.exit(0)
