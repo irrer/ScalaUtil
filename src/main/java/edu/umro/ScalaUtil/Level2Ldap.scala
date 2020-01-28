@@ -196,18 +196,17 @@ object Level2Ldap {
    * @return Either Left with error message or Right with list of groups.
    */
   def getUserInfo(userId: String, secret: String): Either[String, UserInfo] = {
-
-    val empty = Set[String]()
-    val environment = basicProperties
-
-    environment.put(Context.SECURITY_AUTHENTICATION, "simple")
-    val securityPrincipal = umichMedQuery(userId)
-    environment.put(Context.SECURITY_PRINCIPAL, securityPrincipal)
-    // Note: If the following SECURITY_CREDENTIALS property is not set, then
-    // it does not password authenticate.
-    environment.put(Context.SECURITY_CREDENTIALS, secret)
-
     try {
+      val empty = Set[String]()
+      val environment = basicProperties
+
+      environment.put(Context.SECURITY_AUTHENTICATION, "simple")
+      val securityPrincipal = umichMedQuery(userId)
+      environment.put(Context.SECURITY_PRINCIPAL, securityPrincipal)
+      // Note: If the following SECURITY_CREDENTIALS property is not set, then
+      // it does not password authenticate.
+      environment.put(Context.SECURITY_CREDENTIALS, secret)
+
       val dirContext = openDirContext(environment)
       if (dirContext.isRight) {
         val dc = dirContext.right.get
@@ -229,7 +228,6 @@ object Level2Ldap {
 
     } catch {
       case t: Throwable => Left("Unexpected exception while getting connecting to LDAP server: " + t)
-
     }
   }
 
