@@ -44,16 +44,22 @@ object DicomUtil {
   /** DICOM compatible time format. */
   val dicomTimeFormat = new SimpleDateFormat("HHmmss.SSS")
 
+  val dicomTimeFormatSimple = new SimpleDateFormat("HHmmss")
+
   /**
    * Parse a text string in DICOM time format and return ms.  On failure to parse return None.
    */
   def parseDicomTime(text: String): Option[Long] = {
+    val parts = text.split('.')
+
     try {
-      try {
-        Some(DicomUtil.dicomTimeFormat.parse(text).getTime)
-      } catch {
-        case e: java.text.ParseException => Some(DicomUtil.dicomTimeFormat.parse(text + ".000").getTime)
-      }
+      val upper = dicomTimeFormatSimple.parse(parts(0))
+      val ms: Long = if (parts.size > 1) {
+        val uS = ((parts(1) + "000000")).take(6).toDouble
+        (uS / 1000).round.toLong
+      } else 0
+
+      Some(upper.getTime + ms)
     } catch {
       case t: Throwable => None
     }
