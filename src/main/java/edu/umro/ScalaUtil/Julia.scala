@@ -1,4 +1,4 @@
-package test.java
+package edu.umro.ScalaUtil
 
 import java.io.File
 import edu.umro.util.Utility
@@ -14,11 +14,8 @@ import com.pixelmed.dicom.OtherByteAttribute
 import com.pixelmed.dicom.OtherWordAttribute
 import java.io.FileOutputStream
 import com.pixelmed.dicom.FileMetaInformation
-import edu.umro.ScalaUtil.DicomUtil
-import edu.umro.ScalaUtil.Trace
 import com.pixelmed.dicom.OtherByteAttributeOnDisk
 import com.pixelmed.dicom.Attribute
-import edu.umro.ScalaUtil.FileUtil
 import java.text.SimpleDateFormat
 
 object Julia {
@@ -115,17 +112,18 @@ object Julia {
 
   def dateOfAl(al: AttributeList): Date = {
     val dateTimeTagPairList = List(
-      (TagFromName.InstanceCreationDate, TagFromName.InstanceCreationTime),
       (TagFromName.ContentDate, TagFromName.ContentTime),
+      (TagFromName.SeriesDate, TagFromName.SeriesTime),
       (TagFromName.AcquisitionDate, TagFromName.AcquisitionTime),
       (TagFromName.CreationDate, TagFromName.CreationTime),
-      (TagFromName.SeriesDate, TagFromName.SeriesTime))
+      (TagFromName.StudyDate, TagFromName.StudyTime),
+      (TagFromName.InstanceCreationDate, TagFromName.InstanceCreationTime))
 
     def get(dateTag: AttributeTag, timeTag: AttributeTag): Option[Date] = {
       try {
         val d = DicomUtil.dicomDateFormat.parse(al.get(dateTag).getSingleStringValueOrNull)
         val t = {
-          val text: String = al.get(timeTag).getSingleStringValueOrNull.replaceAll("\\..*", "")
+          val text: String = al.get(timeTag).getSingleStringValueOrNull
           new Date(DicomUtil.parseDicomTime(text).get)
         }
 
@@ -316,7 +314,8 @@ object Julia {
 
   def main(args: Array[String]): Unit = {
     val start = System.currentTimeMillis
-    val mainDir = new File("""D:\tmp\julia\DUST1""") //      new File(args.head)
+    //val mainDir = new File("""D:\tmp\julia\DUST1""")
+    val mainDir = new File(args.head)
     val outDir = new File(mainDir.getParentFile, mainDir.getName + "fixed")
     Utility.deleteFileTree(outDir)
     outDir.mkdirs
