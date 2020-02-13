@@ -19,11 +19,30 @@ import edu.umro.ScalaUtil.Trace
 import com.pixelmed.dicom.OtherByteAttributeOnDisk
 import com.pixelmed.dicom.Attribute
 import edu.umro.ScalaUtil.FileUtil
+import java.text.SimpleDateFormat
 
 object Julia {
 
   private val outDir = new File("hey")
   private val frameOfRefSet = scala.collection.mutable.Set[String]()
+
+  val dateFormat = new SimpleDateFormat("_yyyy-MM-dd_HH-MM-ss-SSS")
+
+  private val future = new SimpleDateFormat("yyyyMMddHHMM").parse("210001011111")
+
+  def textDateOf(alList: Seq[DcmFl]): String = {
+    try {
+      dateFormat.format(new Date(alList.map(ct => ct.date.getTime).max))
+    } catch {
+      case t: Throwable => {
+        if (alList.nonEmpty) {
+          val bad = alList.head.toString.replace('\0', ' ')
+          Trace.trace("bad date for list of als")
+        }
+        dateFormat.format(future)
+      }
+    }
+  }
 
   private val doneSet = scala.collection.mutable.Set[String]()
 
@@ -94,6 +113,35 @@ object Julia {
     } else ""
   }
 
+  def dateOfAl(al: AttributeList): Date = {
+    val dateTimeTagPairList = List(
+      (TagFromName.InstanceCreationDate, TagFromName.InstanceCreationTime),
+      (TagFromName.ContentDate, TagFromName.ContentTime),
+      (TagFromName.AcquisitionDate, TagFromName.AcquisitionTime),
+      (TagFromName.CreationDate, TagFromName.CreationTime),
+      (TagFromName.SeriesDate, TagFromName.SeriesTime))
+
+    def get(dateTag: AttributeTag, timeTag: AttributeTag): Option[Date] = {
+      try {
+        val d = DicomUtil.dicomDateFormat.parse(al.get(dateTag).getSingleStringValueOrNull)
+        val t = {
+          val text: String = al.get(timeTag).getSingleStringValueOrNull.replaceAll("\\..*", "")
+          new Date(DicomUtil.parseDicomTime(text).get)
+        }
+
+        Some(new Date(d.getTime + t.getTime))
+
+      } catch {
+        case t: Throwable => {
+          val bad = al.toString.replace('\0', ' ')
+          None
+        }
+      }
+    }
+
+    dateTimeTagPairList.map(dt => get(dt._1, dt._2)).flatten.head
+  }
+
   private class DcmFl(f: File, al: AttributeList) {
     val file = f
     val modality = new String(modalityOf(al))
@@ -102,6 +150,17 @@ object Julia {
     val frameOfRef = new String(frameOfRefOf(al))
     val referencedPlan = new String(refPlanOf(al))
     val zPos = zPosOf(al) + 0
+    val date = {
+      try {
+        dateOfAl(al)
+      } catch {
+        case t: Throwable => {
+          val bad = al.toString.replace('\0', ' ')
+          future
+        }
+      }
+    }
+    val dateText = dateFormat.format(date)
 
     def copyTo(dest: File) = {
       val data = FileUtil.readBinaryFile(file).right.get
@@ -129,7 +188,7 @@ object Julia {
 
     contourSeq.zip(ctList.map(ct => ct.sop)).map(contourUid => fixContour(contourUid._1, contourUid._2))
 
-    val file = new File(outDir, "RTSTRUCT_" + fmt(frameOfRefIndex) + "_" + fmt(rtstructIndex) + ".dcm")
+    val file = new File(outDir, "RTSTRUCT_" + fmt(frameOfRefIndex) + "_" + fmt(rtstructIndex) + rtstructDF.dateText + ".dcm")
     writeFile(rtstruct, file)
     Trace.trace("wrote file " + file.getAbsolutePath)
   }
@@ -137,36 +196,36 @@ object Julia {
   def fmt(i: Int) = i.formatted("%03d")
 
   private def saveCtList(ctList: Seq[DcmFl], index: Int, outDir: File) = {
-    val ctDir = new File(outDir, "CT_" + fmt(index))
+    val ctDir = new File(outDir, "CT" + textDateOf(ctList) + "_" + fmt(index))
     ctDir.mkdirs
     ctList.zipWithIndex.map(ctIdx => {
-      val dest = new File(ctDir, "CT-" + fmt(ctIdx._2 + 1))
+      val dest = new File(ctDir, "CT-" + fmt(ctIdx._2 + 1) + ".dcm")
       ctIdx._1.copyTo(dest)
     })
   }
 
   private def saveRtplan(rtplanDM: DcmFl, outDir: File, frmOfRefIndex: Int, planIndex: Int) = {
-    val dest = new File(outDir, "RTPLAN_" + fmt(frmOfRefIndex) + "-" + fmt(planIndex) + ".dcm")
+    val dest = new File(outDir, "RTPLAN_" + rtplanDM.dateText + "_" + fmt(planIndex) + ".dcm")
     rtplanDM.copyTo(dest)
   }
 
   private def saveRtimage(rtimageDM: DcmFl, outDir: File, frmOfRefIndex: Int, rtimageIndex: Int) = {
-    val dest = new File(outDir, "RTIMAGE_" + fmt(frmOfRefIndex) + "-" + fmt(rtimageIndex) + ".dcm")
+    val dest = new File(outDir, "RTIMAGE" + rtimageDM.dateText + "_" + fmt(rtimageIndex) + ".dcm")
     rtimageDM.copyTo(dest)
   }
 
   private def saveReg(regDM: DcmFl, outDir: File, frmOfRefIndex: Int, regIndex: Int) = {
-    val dest = new File(outDir, "REG_" + fmt(frmOfRefIndex) + "-" + fmt(regIndex) + ".dcm")
+    val dest = new File(outDir, "REG" + regDM.dateText + "_" + fmt(regIndex) + ".dcm")
     regDM.copyTo(dest)
   }
 
   private def saveRtdose(rtdoseDM: DcmFl, outDir: File, frmOfRefIndex: Int, rtdoseIndex: Int) = {
-    val dest = new File(outDir, "RTDOSE_" + fmt(frmOfRefIndex) + "-" + fmt(rtdoseIndex) + ".dcm")
+    val dest = new File(outDir, "RTDOSE" + rtdoseDM.dateText + "_" + fmt(rtdoseIndex) + ".dcm")
     rtdoseDM.copyTo(dest)
   }
 
   private def saveRtrecord(regDM: DcmFl, outDir: File, frmOfRefIndex: Int, rtrecordIndex: Int) = {
-    val dest = new File(outDir, "RTRECORD_" + fmt(frmOfRefIndex) + "-" + fmt(rtrecordIndex) + ".dcm")
+    val dest = new File(outDir, "RTRECORD_" + regDM.dateText + "_" + fmt(rtrecordIndex) + ".dcm")
     regDM.copyTo(dest)
   }
 
@@ -176,8 +235,8 @@ object Julia {
   }
 
   private def fix(frmOfRef: String, frmOfRefIndex: Int, allDcm: Seq[DcmFl], outDir: File) = {
-    val frmOfRefDir = new File(outDir, "FrmofRef_" + fmt(frmOfRefIndex))
     val frmOfRefList = allDcm.filter(d => d.frameOfRef.equals(frmOfRef))
+    val frmOfRefDir = new File(outDir, "FrmofRef" + textDateOf(frmOfRefList) + "_" + fmt(frmOfRefIndex))
     val ctList = frmOfRefList.filter(d => d.modality.equals("CT")).sortBy(d => d.zPos)
     saveCtList(ctList, frmOfRefIndex, frmOfRefDir)
 
@@ -216,14 +275,15 @@ object Julia {
         (!d.modality.equals("RTPLAN")))
 
     def saveSeries(series: Seq[DcmFl], seriesIndex: Int) = {
+      val seriesDate = textDateOf(series)
       if (series.size == 1) {
-        val dest = new File(outDir, series.head.modality + "-" + fmt(seriesIndex) + ".dcm")
+        val dest = new File(outDir, series.head.modality + seriesDate + "_" + fmt(seriesIndex) + ".dcm")
         series.head.copyTo(dest)
       } else {
-        val seriesDir = new File(outDir, series.head.modality + "-" + fmt(seriesIndex))
+        val seriesDir = new File(outDir, series.head.modality + seriesDate + "_" + fmt(seriesIndex))
         seriesDir.mkdirs
         series.zipWithIndex.map(di => {
-          val dest = new File(seriesDir, series.head.modality + fmt(di._2 + 1) + ".dcm")
+          val dest = new File(seriesDir, series.head.modality + seriesDate + "_" + fmt(di._2 + 1) + ".dcm")
           di._1.copyTo(dest)
         })
       }
