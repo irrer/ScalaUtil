@@ -17,6 +17,7 @@ import com.pixelmed.dicom.FileMetaInformation
 import com.pixelmed.dicom.OtherByteAttributeOnDisk
 import com.pixelmed.dicom.Attribute
 import java.text.SimpleDateFormat
+import org.scalatest.Fact.IsEqvTo
 
 object Julia {
 
@@ -89,6 +90,8 @@ object Julia {
 
   private def seriesUidOf(al: AttributeList) = al.get(TagFromName.SeriesInstanceUID).getSingleStringValueOrEmptyString
 
+  private def manufModOf(al: AttributeList) = al.get(TagFromName.ManufacturerModelName).getSingleStringValueOrEmptyString
+
   private def frameOfRefOf(al: AttributeList): String = {
     val list = DicomUtil.findAllSingle(al, TagFromName.FrameOfReferenceUID).map(at => at.getSingleStringValueOrEmptyString)
 
@@ -147,6 +150,8 @@ object Julia {
     val seriesUid = new String(seriesUidOf(al))
     val frameOfRef = new String(frameOfRefOf(al))
     val referencedPlan = new String(refPlanOf(al))
+    val manufacturerModelName = new String(manufModOf(al))
+
     val zPos = zPosOf(al) + 0
     val date = {
       try {
@@ -193,13 +198,20 @@ object Julia {
 
   def fmt(i: Int) = i.formatted("%03d")
 
-  private def saveCtList(ctList: Seq[DcmFl], index: Int, outDir: File) = {
-    val ctDir = new File(outDir, "CT" + textDateOf(ctList) + "_" + fmt(index))
+  private def saveCtSeries(ctSeries: Seq[DcmFl], index: Int, outDir: File) = {
+    val manfName = ctSeries.head.manufacturerModelName.replaceAll("[^a-zA-Z0-9]", "_")
+    val ctDirName = ("CT_" + manfName + "_" + textDateOf(ctSeries) + "_" + fmt(index)).replaceAll("___*", "_")
+    val ctDir = new File(outDir, ctDirName)
     ctDir.mkdirs
-    ctList.zipWithIndex.map(ctIdx => {
+    ctSeries.zipWithIndex.map(ctIdx => {
       val dest = new File(ctDir, "CT-" + fmt(ctIdx._2 + 1) + ".dcm")
       ctIdx._1.copyTo(dest)
     })
+  }
+
+  private def saveCtList(ctList: Seq[DcmFl], index: Int, outDir: File) = {
+    val seriesList = ctList.groupBy(f => f.seriesUid).map(sf => sf._2)
+    seriesList.zipWithIndex.map(si => saveCtSeries(si._1, si._2 + 1, outDir))
   }
 
   private def saveRtplan(rtplanDM: DcmFl, outDir: File, frmOfRefIndex: Int, planIndex: Int) = {
@@ -234,9 +246,17 @@ object Julia {
 
   private def fix(frmOfRef: String, frmOfRefIndex: Int, allDcm: Seq[DcmFl], outDir: File) = {
     val frmOfRefList = allDcm.filter(d => d.frameOfRef.equals(frmOfRef))
-    val frmOfRefDir = new File(outDir, "FrmofRef" + textDateOf(frmOfRefList) + "_" + fmt(frmOfRefIndex))
     val ctList = frmOfRefList.filter(d => d.modality.equals("CT")).sortBy(d => d.zPos)
-    saveCtList(ctList, frmOfRefIndex, frmOfRefDir)
+    val frmOfRefDirDate = {
+      (ctList.nonEmpty, frmOfRefList.find(f => f.modality.equals("RTIMAGE"))) match {
+        case (true, _) => textDateOf(ctList)
+        case (_, Some(dcmFl)) => textDateOf(frmOfRefList.filter(d => d.modality.equals("RTIMAGE")))
+        case _ => textDateOf(frmOfRefList)
+      }
+    }
+
+    val frmOfRefDir = new File(outDir, "FrmofRef" + frmOfRefDirDate + "_" + fmt(frmOfRefIndex))
+    if (ctList.nonEmpty) saveCtList(ctList, frmOfRefIndex, frmOfRefDir)
 
     val rtstructList = frmOfRefList.filter(d => d.modality.equals("RTSTRUCT"))
     // private def fixRtstruct(rtstructDF: DcmFl, outDir : File, index: Int, frameOfRefIndex: Int, rtstructIndex: Int, ctList: Seq[DcmFl]) = {
@@ -314,9 +334,12 @@ object Julia {
 
   def main(args: Array[String]): Unit = {
     val start = System.currentTimeMillis
-    //val mainDir = new File("""D:\tmp\julia\DUST1""")
-    val mainDir = new File(args.head)
-    val outDir = new File(mainDir.getParentFile, mainDir.getName + "fixed")
+    val mainDir = {
+      val testDir = new File("""D:\tmp\julia\DUST1""")
+      if (args.isEmpty && (testDir.isDirectory)) testDir
+      else new File(args.head)
+    }
+    val outDir = new File(mainDir.getParentFile, mainDir.getName + "fix")
     Utility.deleteFileTree(outDir)
     outDir.mkdirs
 
