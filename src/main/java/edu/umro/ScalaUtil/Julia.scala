@@ -18,26 +18,32 @@ import com.pixelmed.dicom.OtherByteAttributeOnDisk
 import com.pixelmed.dicom.Attribute
 import java.text.SimpleDateFormat
 import org.scalatest.Fact.IsEqvTo
+import java.util.Calendar
+import java.util.TimeZone
 
 object Julia {
 
-  private val outDir = new File("hey")
   private val frameOfRefSet = scala.collection.mutable.Set[String]()
 
-  val dateFormat = new SimpleDateFormat("_yyyy-MM-dd_HH-MM-ss-SSS")
+  val calendar = Calendar.getInstance
+  val tzOffset_ms = calendar.get(Calendar.ZONE_OFFSET) + calendar.get(Calendar.DST_OFFSET)
+  val dateFormat = new SimpleDateFormat("_yyyy-MM-dd_HH-mm-ss-SSS")
 
   private val future = new SimpleDateFormat("yyyyMMddHHMM").parse("210001011111")
 
+  private var dcmFlCount = 0
+
   def textDateOf(alList: Seq[DcmFl]): String = {
     try {
-      dateFormat.format(new Date(alList.map(ct => ct.date.getTime).max))
+      val maxDate = new Date(alList.map(ct => ct.date.getTime).max)
+      dateFormat.format(new Date(maxDate.getTime + tzOffset_ms))
     } catch {
       case t: Throwable => {
         if (alList.nonEmpty) {
           val bad = alList.head.toString.replace('\0', ' ')
           Trace.trace("bad date for list of als")
         }
-        dateFormat.format(future)
+        dateFormat.format(new Date(future.getTime + tzOffset_ms))
       }
     }
   }
@@ -66,7 +72,7 @@ object Julia {
 
   private def readFile(file: File) = {
     val al = new AttributeList
-    //println("reading file: " + file.getAbsolutePath)
+    //Trace.trace("reading file: " + file.getAbsolutePath)
     al.read(file)
     al
   }
@@ -74,7 +80,7 @@ object Julia {
   private def writeFile(al: AttributeList, file: File) = {
     FileMetaInformation.addFileMetaInformation(al, transferSyntax, "JimIrrer")
     DicomUtil.writeAttributeListToFile(al, file, "JimIrrer")
-    println("Created " + file.getAbsolutePath)
+    //Trace.trace("Created " + file.getAbsolutePath)
   }
 
   private def seriesOf(al: AttributeList) = al.get(TagFromName.SeriesInstanceUID).getSingleStringValueOrEmptyString
@@ -140,7 +146,8 @@ object Julia {
       }
     }
 
-    dateTimeTagPairList.map(dt => get(dt._1, dt._2)).flatten.head
+    val list = dateTimeTagPairList.map(dt => get(dt._1, dt._2))
+    list.flatten.head
   }
 
   private class DcmFl(f: File, al: AttributeList) {
@@ -163,12 +170,16 @@ object Julia {
         }
       }
     }
-    val dateText = dateFormat.format(date)
+    val dateText = dateFormat.format(new Date(date.getTime + tzOffset_ms))
 
     def copyTo(dest: File) = {
       val data = FileUtil.readBinaryFile(file).right.get
       FileUtil.writeBinaryFile(dest, data)
     }
+
+    dcmFlCount = dcmFlCount + 1
+    if ((dcmFlCount % 1000) == 0)
+      Trace.trace("Files read: " + dcmFlCount)
   }
 
   private def fixRtstruct(rtstructDF: DcmFl, outDir: File, frameOfRefIndex: Int, rtstructIndex: Int, ctList: Seq[DcmFl]) = {
@@ -193,7 +204,7 @@ object Julia {
 
     val file = new File(outDir, "RTSTRUCT_" + fmt(frameOfRefIndex) + "_" + fmt(rtstructIndex) + rtstructDF.dateText + ".dcm")
     writeFile(rtstruct, file)
-    Trace.trace("wrote file " + file.getAbsolutePath)
+    //Trace.trace("wrote file " + file.getAbsolutePath)
   }
 
   def fmt(i: Int) = i.formatted("%03d")
@@ -245,6 +256,7 @@ object Julia {
   }
 
   private def fix(frmOfRef: String, frmOfRefIndex: Int, allDcm: Seq[DcmFl], outDir: File) = {
+    Trace.trace("Processing frame of ref: " + frmOfRefIndex)
     val frmOfRefList = allDcm.filter(d => d.frameOfRef.equals(frmOfRef))
     val ctList = frmOfRefList.filter(d => d.modality.equals("CT")).sortBy(d => d.zPos)
     val frmOfRefDirDate = {
@@ -333,6 +345,7 @@ object Julia {
   }
 
   def main(args: Array[String]): Unit = {
+
     val start = System.currentTimeMillis
     val mainDir = {
       val testDir = new File("""D:\tmp\julia\DUST1""")
@@ -347,15 +360,20 @@ object Julia {
     Trace.trace("allFiles.size: " + allFiles.size)
 
     // read meta data and remove duplicate SOPs
-    val allDcm = allFiles.map(f => new DcmFl(f, readFile(f))).groupBy(_.sop).map(_._2.head).toSeq
+    //    val allDcm = allFiles.map(f => new DcmFl(f, readFile(f))).groupBy(_.sop).map(_._2.head).toSeq
+    val allDcm = allFiles.map(f => new DcmFl(f, readFile(f)))
+    Trace.trace("Total number of files found: " + allDcm.size)
+    val uniqueDcm = allDcm.map(d => (d.sop, d)).toMap.values.toList
+    Trace.trace("Total number of unique files found: " + uniqueDcm.size)
 
-    val frmOfRefList = allDcm.map(d => d.frameOfRef).distinct
+    val frmOfRefList = uniqueDcm.map(d => d.frameOfRef).distinct
+    Trace.trace("Number of frames of ref: " + frmOfRefList.size)
 
-    frmOfRefList.zipWithIndex.map(frmOfRefIdx => fix(frmOfRefIdx._1, frmOfRefIdx._2 + 1, allDcm, outDir))
+    frmOfRefList.zipWithIndex.map(frmOfRefIdx => fix(frmOfRefIdx._1, frmOfRefIdx._2 + 1, uniqueDcm, outDir))
 
     //saveOther(allDcm, outDir)
 
-    println(mainDir.getName + "  Elapsed ms: " + (System.currentTimeMillis - start))
+    Trace.trace(mainDir.getName + "  Elapsed ms: " + (System.currentTimeMillis - start))
   }
 
 }
