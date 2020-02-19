@@ -20,8 +20,9 @@ import java.text.SimpleDateFormat
 import org.scalatest.Fact.IsEqvTo
 import java.util.Calendar
 import java.util.TimeZone
+import com.pixelmed.dicom.AttributeList.ReadTerminationStrategy
 
-object Julia {
+object Julia extends Logging {
 
   private val frameOfRefSet = scala.collection.mutable.Set[String]()
 
@@ -40,7 +41,6 @@ object Julia {
     } catch {
       case t: Throwable => {
         if (alList.nonEmpty) {
-          val bad = alList.head.toString.replace('\0', ' ')
           Trace.trace("bad date for list of als")
         }
         dateFormat.format(new Date(future.getTime + tzOffset_ms))
@@ -96,7 +96,14 @@ object Julia {
 
   private def seriesUidOf(al: AttributeList) = al.get(TagFromName.SeriesInstanceUID).getSingleStringValueOrEmptyString
 
-  private def manufModOf(al: AttributeList) = al.get(TagFromName.ManufacturerModelName).getSingleStringValueOrEmptyString
+  private def manufModOf(al: AttributeList) = {
+    val dflt = "unknown"
+    try {
+      al.get(TagFromName.ManufacturerModelName).getSingleStringValueOrDefault(dflt)
+    } catch {
+      case t: Throwable => dflt
+    }
+  }
 
   private def frameOfRefOf(al: AttributeList): String = {
     val list = DicomUtil.findAllSingle(al, TagFromName.FrameOfReferenceUID).map(at => at.getSingleStringValueOrEmptyString)
@@ -140,7 +147,6 @@ object Julia {
 
       } catch {
         case t: Throwable => {
-          val bad = al.toString.replace('\0', ' ')
           None
         }
       }
@@ -150,7 +156,56 @@ object Julia {
     list.flatten.head
   }
 
+  val tagsOfInterest = Seq(
+    TagFromName.AcquisitionDate,
+    TagFromName.AcquisitionTime,
+    TagFromName.ContentDate,
+    TagFromName.ContentTime,
+    TagFromName.CreationDate,
+    TagFromName.CreationTime,
+    TagFromName.ImagePositionPatient,
+    TagFromName.InstanceCreationDate,
+    TagFromName.InstanceCreationTime,
+    TagFromName.ManufacturerModelName,
+    TagFromName.Modality,
+    TagFromName.SeriesDate,
+    TagFromName.SeriesInstanceUID,
+    TagFromName.SeriesTime,
+    TagFromName.SOPInstanceUID,
+    TagFromName.StudyDate,
+    TagFromName.StudyTime)
+
+  def tagToLong(t: AttributeTag): Long = {
+    (t.getGroup.toLong << 16) + t.getElement
+  }
+
+  val lastTagOfInterest = tagsOfInterest.maxBy(tagToLong)
+
+  private def readPartial(file: File): AttributeList = {
+
+    var savedAttrList = new AttributeList
+    class ReadStrategy extends ReadTerminationStrategy {
+      override def terminate(al: AttributeList, tag: AttributeTag, bytesRead: Long): Boolean = {
+        savedAttrList = al
+        tagToLong(tag) > tagToLong(lastTagOfInterest)
+      }
+    }
+
+    val readStrategy = new ReadStrategy
+
+    try {
+      (new AttributeList).read(file, readStrategy)
+    } catch {
+      case t: Throwable => ;
+    }
+    savedAttrList
+  }
+
+  var timeToShowProgress = System.currentTimeMillis + 1000
+
   private class DcmFl(f: File, al: AttributeList) {
+
+    val all = readPartial(f)
     val file = f
     val modality = new String(modalityOf(al))
     val sop = new String(sopOf(al))
@@ -165,7 +220,6 @@ object Julia {
         dateOfAl(al)
       } catch {
         case t: Throwable => {
-          val bad = al.toString.replace('\0', ' ')
           future
         }
       }
@@ -174,12 +228,20 @@ object Julia {
 
     def copyTo(dest: File) = {
       val data = FileUtil.readBinaryFile(file).right.get
+      dest.getParentFile.mkdirs
       FileUtil.writeBinaryFile(dest, data)
     }
 
     dcmFlCount = dcmFlCount + 1
-    if ((dcmFlCount % 1000) == 0)
+    val now = System.currentTimeMillis
+    if (((dcmFlCount % 1000) == 0) || (dcmFlCount > 14000) || (now > timeToShowProgress)) {
       Trace.trace("Files read: " + dcmFlCount)
+      timeToShowProgress = now + 1000
+      if ((dcmFlCount % 1000) == 0) {
+        Runtime.getRuntime.gc
+        Thread.sleep(50)
+      }
+    }
   }
 
   private def fixRtstruct(rtstructDF: DcmFl, outDir: File, frameOfRefIndex: Int, rtstructIndex: Int, ctList: Seq[DcmFl]) = {
@@ -347,33 +409,48 @@ object Julia {
   def main(args: Array[String]): Unit = {
 
     val start = System.currentTimeMillis
-    val mainDir = {
-      val testDir = new File("""D:\tmp\julia\DUST1""")
-      if (args.isEmpty && (testDir.isDirectory)) testDir
-      else new File(args.head)
+    try {
+      val mainDir = {
+        //val testDir = new File("""D:\tmp\julia\DUST1""")
+        val testDir = new File("""D:\tmp\julia\BEE1""")
+        if (args.isEmpty && (testDir.isDirectory)) testDir
+        else new File(args.head)
+      }
+      val outDir = new File(mainDir.getParentFile, mainDir.getName + "fix")
+      Utility.deleteFileTree(outDir)
+      outDir.mkdirs
+
+      val allFiles = listRegularFiles(mainDir).filter(f => f.getName.toLowerCase.endsWith(".dcm"))
+      Trace.trace("allFiles.size: " + allFiles.size)
+
+      val uniqueDcm = {
+        val dclFlList = scala.collection.mutable.HashMap[String, DcmFl]()
+        allFiles.map(f => {
+          val dcmFl = new DcmFl(f, readFile(f))
+          val sop = dcmFl.sop
+          if (!dclFlList.contains(sop)) dclFlList.put(sop, dcmFl)
+        })
+        Trace.trace
+        val list = dclFlList.values.toList
+        Trace.trace("Total number of unique files found: " + list.size)
+        list
+      }
+
+      Trace.trace("Total number of unique files found: " + uniqueDcm.size)
+
+      val frmOfRefList = uniqueDcm.map(d => d.frameOfRef).distinct
+      Trace.trace("Number of frames of ref: " + frmOfRefList.size)
+
+      frmOfRefList.zipWithIndex.map(frmOfRefIdx => fix(frmOfRefIdx._1, frmOfRefIdx._2 + 1, uniqueDcm, outDir))
+
+      //saveOther(allDcm, outDir)
+
+      Trace.trace(mainDir.getName + "  Elapsed ms: " + (System.currentTimeMillis - start))
+    } catch {
+      case t: Throwable => {
+        Trace.trace("Elapsed ms: " + (System.currentTimeMillis - start) + "    Unexpected exception: " + fmtEx(t))
+      }
     }
-    val outDir = new File(mainDir.getParentFile, mainDir.getName + "fix")
-    Utility.deleteFileTree(outDir)
-    outDir.mkdirs
-
-    val allFiles = listRegularFiles(mainDir).filter(f => f.getName.toLowerCase.endsWith(".dcm"))
-    Trace.trace("allFiles.size: " + allFiles.size)
-
-    // read meta data and remove duplicate SOPs
-    //    val allDcm = allFiles.map(f => new DcmFl(f, readFile(f))).groupBy(_.sop).map(_._2.head).toSeq
-    val allDcm = allFiles.map(f => new DcmFl(f, readFile(f)))
-    Trace.trace("Total number of files found: " + allDcm.size)
-    val uniqueDcm = allDcm.map(d => (d.sop, d)).toMap.values.toList
-    Trace.trace("Total number of unique files found: " + uniqueDcm.size)
-
-    val frmOfRefList = uniqueDcm.map(d => d.frameOfRef).distinct
-    Trace.trace("Number of frames of ref: " + frmOfRefList.size)
-
-    frmOfRefList.zipWithIndex.map(frmOfRefIdx => fix(frmOfRefIdx._1, frmOfRefIdx._2 + 1, uniqueDcm, outDir))
-
-    //saveOther(allDcm, outDir)
-
-    Trace.trace(mainDir.getName + "  Elapsed ms: " + (System.currentTimeMillis - start))
   }
 
 }
