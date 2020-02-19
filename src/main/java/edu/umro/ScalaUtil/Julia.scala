@@ -85,9 +85,9 @@ object Julia extends Logging {
 
   private def seriesOf(al: AttributeList) = al.get(TagFromName.SeriesInstanceUID).getSingleStringValueOrEmptyString
 
-  private def zPosOf(al: AttributeList) = {
-    val ipp = al.get(TagFromName.ImagePositionPatient)
-    if (ipp == null) 0 else ipp.getDoubleValues()(2)
+  private def positionOf(al: AttributeList) = {
+    val ipp = al.get(TagFromName.SliceLocation)
+    if (ipp == null) 0 else ipp.getDoubleValues.head
   }
 
   private def modalityOf(al: AttributeList) = al.get(TagFromName.Modality).getSingleStringValueOrEmptyString
@@ -164,6 +164,7 @@ object Julia extends Logging {
     TagFromName.CreationDate,
     TagFromName.CreationTime,
     TagFromName.ImagePositionPatient,
+    TagFromName.SliceLocation,
     TagFromName.InstanceCreationDate,
     TagFromName.InstanceCreationTime,
     TagFromName.ManufacturerModelName,
@@ -179,15 +180,15 @@ object Julia extends Logging {
     (t.getGroup.toLong << 16) + t.getElement
   }
 
-  val lastTagOfInterest = tagsOfInterest.maxBy(tagToLong)
+  val lastTagOfInterestAsLong = tagToLong(tagsOfInterest.maxBy(tagToLong))
 
-  private def readPartial(file: File): AttributeList = {
+  private def readPartial(file: File, lastTagAsLong: Long = lastTagOfInterestAsLong): AttributeList = {
 
     var savedAttrList = new AttributeList
     class ReadStrategy extends ReadTerminationStrategy {
       override def terminate(al: AttributeList, tag: AttributeTag, bytesRead: Long): Boolean = {
         savedAttrList = al
-        tagToLong(tag) > tagToLong(lastTagOfInterest)
+        tagToLong(tag) > lastTagAsLong
       }
     }
 
@@ -203,18 +204,29 @@ object Julia extends Logging {
 
   var timeToShowProgress = System.currentTimeMillis + 1000
 
-  private class DcmFl(f: File, al: AttributeList) {
+  private class DcmFl(f: File) {
 
-    val all = readPartial(f)
+    val al: AttributeList = {
+      val partial = readPartial(f)
+      val isRtstruct = partial.get(TagFromName.Modality).getSingleStringValueOrEmptyString.equals("RTSTRUCT")
+      if (isRtstruct)
+        readPartial(f, tagToLong(TagFromName.StructureSetROISequence))
+      else
+        partial
+    }
+
     val file = f
     val modality = new String(modalityOf(al))
     val sop = new String(sopOf(al))
     val seriesUid = new String(seriesUidOf(al))
     val frameOfRef = new String(frameOfRefOf(al))
+    if (frameOfRef.equals("none") && modality.equals("RTSTRUCT")) {
+      Trace.trace("No frame of reference for RTSTRUCT " + file.getAbsolutePath)
+    }
     val referencedPlan = new String(refPlanOf(al))
     val manufacturerModelName = new String(manufModOf(al))
 
-    val zPos = zPosOf(al) + 0
+    val position = positionOf(al)
     val date = {
       try {
         dateOfAl(al)
@@ -234,7 +246,7 @@ object Julia extends Logging {
 
     dcmFlCount = dcmFlCount + 1
     val now = System.currentTimeMillis
-    if (((dcmFlCount % 1000) == 0) || (dcmFlCount > 14000) || (now > timeToShowProgress)) {
+    if (now > timeToShowProgress) {
       Trace.trace("Files read: " + dcmFlCount)
       timeToShowProgress = now + 1000
       if ((dcmFlCount % 1000) == 0) {
@@ -242,73 +254,102 @@ object Julia extends Logging {
         Thread.sleep(50)
       }
     }
+
   }
 
-  private def fixRtstruct(rtstructDF: DcmFl, outDir: File, frameOfRefIndex: Int, rtstructIndex: Int, ctList: Seq[DcmFl]) = {
-    val rtstruct = readFile(rtstructDF.file)
-    val refFrmOfRef = DicomUtil.seqToAttr(rtstruct, TagFromName.ReferencedFrameOfReferenceSequence).head
-    val studySeq = DicomUtil.seqToAttr(refFrmOfRef, TagFromName.RTReferencedStudySequence).head
-    val seriesSeq = DicomUtil.seqToAttr(studySeq, TagFromName.RTReferencedSeriesSequence).head
-    val contourSeq = DicomUtil.seqToAttr(seriesSeq, TagFromName.ContourImageSequence)
+  def resolution(f: File): Int = {
+    val al = readFile(f)
+    al.get(TagFromName.Rows).getIntegerValues.head * al.get(TagFromName.Columns).getIntegerValues.head
+  }
 
-    val imageSeriesUid = ctList.head.seriesUid
-    val refSeries = seriesSeq.get(TagFromName.SeriesInstanceUID)
-    refSeries.removeValues
-    refSeries.addValue(imageSeriesUid)
+  private def fixRtstruct(rtstructDF: DcmFl, outDir: File, frameOfRefIndex: Int, rtstructIndex: Int, imageSeriesList: Seq[Seq[DcmFl]]) = {
+    Trace.trace("processing: " + rtstructDF.file)
 
-    def fixContour(al: AttributeList, uid: String) = {
-      val refSop = al.get(TagFromName.ReferencedSOPInstanceUID)
-      refSop.removeValues
-      refSop.addValue(uid)
+    def noCt(msg: String) = {
+      val destFile = new File(outDir, "RTSTRUCT_" + msg + "_" + fmt(frameOfRefIndex) + "_" + fmt(rtstructIndex) + rtstructDF.dateText + ".dcm")
+      rtstructDF.copyTo(destFile)
+      Trace.trace("Could not match image series to RTSTRUCT for file " + rtstructDF.file.getAbsolutePath + " --> " + destFile.getAbsolutePath)
     }
 
-    contourSeq.zip(ctList.map(ct => ct.sop)).map(contourUid => fixContour(contourUid._1, contourUid._2))
+    if (imageSeriesList.isEmpty) noCt("NoImageSeries")
+    else {
+      val rtstruct = readFile(rtstructDF.file)
+      val refFrmOfRef = DicomUtil.seqToAttr(rtstruct, TagFromName.ReferencedFrameOfReferenceSequence).head
+      val studySeq = DicomUtil.seqToAttr(refFrmOfRef, TagFromName.RTReferencedStudySequence).head
+      val seriesSeq = DicomUtil.seqToAttr(studySeq, TagFromName.RTReferencedSeriesSequence).head
+      val contourSeq = DicomUtil.seqToAttr(seriesSeq, TagFromName.ContourImageSequence)
 
-    val file = new File(outDir, "RTSTRUCT_" + fmt(frameOfRefIndex) + "_" + fmt(rtstructIndex) + rtstructDF.dateText + ".dcm")
-    writeFile(rtstruct, file)
-    //Trace.trace("wrote file " + file.getAbsolutePath)
+      val ctSeriesOpt = imageSeriesList.find(s => s.size == contourSeq.size)
+      if (ctSeriesOpt.isEmpty) noCt("WrongSizeImageSeries")
+      else {
+        val ctSeries = ctSeriesOpt.get
+        val imageSeriesUid = ctSeries.head.seriesUid
+        val refSeries = seriesSeq.get(TagFromName.SeriesInstanceUID)
+        refSeries.removeValues
+        refSeries.addValue(imageSeriesUid)
+
+        def fixContour(al: AttributeList, uid: String) = {
+          val refSop = al.get(TagFromName.ReferencedSOPInstanceUID)
+          refSop.removeValues
+          refSop.addValue(uid)
+        }
+
+        contourSeq.zip(ctSeries.map(ct => ct.sop)).map(contourUid => fixContour(contourUid._1, contourUid._2))
+
+        val destFile = new File(outDir, "RTSTRUCT_" + fmt(frameOfRefIndex) + "_" + fmt(rtstructIndex) + rtstructDF.dateText + ".dcm")
+        writeFile(rtstruct, destFile)
+      }
+    }
   }
 
   def fmt(i: Int) = i.formatted("%03d")
 
-  private def saveCtSeries(ctSeries: Seq[DcmFl], index: Int, outDir: File) = {
-    val manfName = ctSeries.head.manufacturerModelName.replaceAll("[^a-zA-Z0-9]", "_")
-    val ctDirName = ("CT_" + manfName + "_" + textDateOf(ctSeries) + "_" + fmt(index)).replaceAll("___*", "_")
-    val ctDir = new File(outDir, ctDirName)
-    ctDir.mkdirs
-    ctSeries.zipWithIndex.map(ctIdx => {
-      val dest = new File(ctDir, "CT-" + fmt(ctIdx._2 + 1) + ".dcm")
-      ctIdx._1.copyTo(dest)
+  private def saveImageSeries(imageSeries: Seq[DcmFl], index: Int, outDir: File) = {
+    val modality = imageSeries.head.modality
+    if (modality.equals("MR"))
+      Trace.trace
+    val manfName = imageSeries.head.manufacturerModelName.replaceAll("[^a-zA-Z0-9]", "_")
+    val imageDirName = (modality + "_" + manfName + "_" + textDateOf(imageSeries) + "_" + fmt(index)).replaceAll("___*", "_")
+    val imageDir = new File(outDir, imageDirName)
+    Trace.trace("Saving " + modality + " series " + imageDir.getAbsolutePath)
+    imageDir.mkdirs
+    imageSeries.zipWithIndex.map(imgIdx => {
+      val dest = new File(imageDir, modality + "-" + fmt(imgIdx._2 + 1) + ".dcm")
+      imgIdx._1.copyTo(dest)
     })
   }
 
-  private def saveCtList(ctList: Seq[DcmFl], index: Int, outDir: File) = {
-    val seriesList = ctList.groupBy(f => f.seriesUid).map(sf => sf._2)
-    seriesList.zipWithIndex.map(si => saveCtSeries(si._1, si._2 + 1, outDir))
+  private def saveImageSeriesList(imageSeriesList: Seq[Seq[DcmFl]], index: Int, outDir: File) = {
+    imageSeriesList.zipWithIndex.map(si => saveImageSeries(si._1, si._2 + 1, outDir))
   }
 
   private def saveRtplan(rtplanDM: DcmFl, outDir: File, frmOfRefIndex: Int, planIndex: Int) = {
     val dest = new File(outDir, "RTPLAN_" + rtplanDM.dateText + "_" + fmt(planIndex) + ".dcm")
+    Trace.trace("Saving RTPLAN " + dest.getAbsolutePath)
     rtplanDM.copyTo(dest)
   }
 
   private def saveRtimage(rtimageDM: DcmFl, outDir: File, frmOfRefIndex: Int, rtimageIndex: Int) = {
     val dest = new File(outDir, "RTIMAGE" + rtimageDM.dateText + "_" + fmt(rtimageIndex) + ".dcm")
+    Trace.trace("Saving RTIMAGE " + dest.getAbsolutePath)
     rtimageDM.copyTo(dest)
   }
 
   private def saveReg(regDM: DcmFl, outDir: File, frmOfRefIndex: Int, regIndex: Int) = {
     val dest = new File(outDir, "REG" + regDM.dateText + "_" + fmt(regIndex) + ".dcm")
+    Trace.trace("Saving REG " + dest.getAbsolutePath)
     regDM.copyTo(dest)
   }
 
   private def saveRtdose(rtdoseDM: DcmFl, outDir: File, frmOfRefIndex: Int, rtdoseIndex: Int) = {
     val dest = new File(outDir, "RTDOSE" + rtdoseDM.dateText + "_" + fmt(rtdoseIndex) + ".dcm")
+    Trace.trace("Saving RTDOSE " + dest.getAbsolutePath)
     rtdoseDM.copyTo(dest)
   }
 
   private def saveRtrecord(regDM: DcmFl, outDir: File, frmOfRefIndex: Int, rtrecordIndex: Int) = {
     val dest = new File(outDir, "RTRECORD_" + regDM.dateText + "_" + fmt(rtrecordIndex) + ".dcm")
+    Trace.trace("Saving RTRECORD " + dest.getAbsolutePath)
     regDM.copyTo(dest)
   }
 
@@ -320,21 +361,26 @@ object Julia extends Logging {
   private def fix(frmOfRef: String, frmOfRefIndex: Int, allDcm: Seq[DcmFl], outDir: File) = {
     Trace.trace("Processing frame of ref: " + frmOfRefIndex)
     val frmOfRefList = allDcm.filter(d => d.frameOfRef.equals(frmOfRef))
-    val ctList = frmOfRefList.filter(d => d.modality.equals("CT")).sortBy(d => d.zPos)
+    val imageSeriesList = frmOfRefList.filter(d => d.modality.equals("CT") || d.modality.equals("MR")).
+      groupBy(_.seriesUid).
+      map(ss => ss._2.sortBy(d => d.position)).
+      toSeq.
+      sortBy(s => resolution(s.head.file))
+
     val frmOfRefDirDate = {
-      (ctList.nonEmpty, frmOfRefList.find(f => f.modality.equals("RTIMAGE"))) match {
-        case (true, _) => textDateOf(ctList)
+      (imageSeriesList.nonEmpty, frmOfRefList.find(f => f.modality.equals("RTIMAGE"))) match {
+        case (true, _) => textDateOf(imageSeriesList.head)
         case (_, Some(dcmFl)) => textDateOf(frmOfRefList.filter(d => d.modality.equals("RTIMAGE")))
         case _ => textDateOf(frmOfRefList)
       }
     }
 
     val frmOfRefDir = new File(outDir, "FrmofRef" + frmOfRefDirDate + "_" + fmt(frmOfRefIndex))
-    if (ctList.nonEmpty) saveCtList(ctList, frmOfRefIndex, frmOfRefDir)
+    if (imageSeriesList.nonEmpty) saveImageSeriesList(imageSeriesList, frmOfRefIndex, frmOfRefDir)
 
     val rtstructList = frmOfRefList.filter(d => d.modality.equals("RTSTRUCT"))
     // private def fixRtstruct(rtstructDF: DcmFl, outDir : File, index: Int, frameOfRefIndex: Int, rtstructIndex: Int, ctList: Seq[DcmFl]) = {
-    rtstructList.zipWithIndex.map(di => fixRtstruct(di._1, frmOfRefDir, frmOfRefIndex, (di._2) + 1, ctList))
+    rtstructList.zipWithIndex.map(di => fixRtstruct(di._1, frmOfRefDir, frmOfRefIndex, (di._2) + 1, imageSeriesList))
 
     val rtplanList = allDcm.filter(d => d.frameOfRef.equals(frmOfRef) && d.modality.equals("RTPLAN"))
     // private def fixRtstruct(rtstructDF: DcmFl, outDir : File, index: Int, frameOfRefIndex: Int, rtstructIndex: Int, ctList: Seq[DcmFl]) = {
@@ -359,6 +405,7 @@ object Julia extends Logging {
     val noFrameOfRef = allDcm.filter(d => d.frameOfRef.size <= 5)
     val byModality = allDcm.filter(d =>
       (!d.modality.equals("CT")) &&
+        (!d.modality.equals("MR")) &&
         (!d.modality.equals("RTSTRUCT")) &&
         (!d.modality.equals("RTIMAGE")) &&
         (!d.modality.equals("REG")) &&
@@ -413,6 +460,7 @@ object Julia extends Logging {
       val mainDir = {
         //val testDir = new File("""D:\tmp\julia\DUST1""")
         val testDir = new File("""D:\tmp\julia\BEE1""")
+        //val testDir = new File("""D:\tmp\julia\bad""")
         if (args.isEmpty && (testDir.isDirectory)) testDir
         else new File(args.head)
       }
@@ -426,11 +474,10 @@ object Julia extends Logging {
       val uniqueDcm = {
         val dclFlList = scala.collection.mutable.HashMap[String, DcmFl]()
         allFiles.map(f => {
-          val dcmFl = new DcmFl(f, readFile(f))
+          val dcmFl = new DcmFl(f)
           val sop = dcmFl.sop
           if (!dclFlList.contains(sop)) dclFlList.put(sop, dcmFl)
         })
-        Trace.trace
         val list = dclFlList.values.toList
         Trace.trace("Total number of unique files found: " + list.size)
         list
