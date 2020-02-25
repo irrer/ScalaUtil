@@ -115,6 +115,8 @@ class DicomReceiver(mainDir: File, myPacs: PACS, receivedObjectHandler: Received
           dstPacs.aeTitle, // moveDestination
           affectedSOPClass, //  affectedSOPClass
           specification) // identifier
+        val status = moveSOPClassSCU.getStatus
+        logger.info("Completed C-MOVE.  status: " + status + "  hex: " + status.formatted("%x"))
         None
       } catch {
         case e: Exception => {
