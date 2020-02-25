@@ -22,7 +22,7 @@ object Util {
    * System independent line separator.
    */
   val LS = System.getProperty("line.separator")
-  
+
   def xmlToText(document: Elem): String = new PrettyPrinter(1024, 2).format(document)
 
   /**
@@ -44,7 +44,7 @@ object Util {
     new SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss"))
 
   def dateToText(date: Date): String = standardDateFormatList(0).format(date)
-  
+
   def standardFormat(date: Date) = dateToText(date)
 
   def textToDate(text: String): Date = {
@@ -64,6 +64,13 @@ object Util {
     val x = validList(0).right.get
     x
   }
+
+  private val justDate = new SimpleDateFormat("yyyy-MM-dd")
+
+  /**
+   * Round off the given date+time to just date, e.g. Jan 24 1956 15:24:56 --> Jan 24 1956 00:00:00
+   */
+  def roundToDate(date: Date): Date = justDate.parse(justDate.format(date))
 
   /**
    * Given a list, group them into smaller groups of a given size.  The last group in the list may be smaller than the others.
