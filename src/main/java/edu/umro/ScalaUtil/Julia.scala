@@ -459,7 +459,8 @@ object Julia extends Logging {
     try {
       val mainDir = {
         //val testDir = new File("""D:\tmp\julia\DUST1""")
-        val testDir = new File("""D:\tmp\julia\BEE1""")
+        //val testDir = new File("""D:\tmp\julia\BEE1""")
+        val testDir = new File("""D:\tmp\aqa\CBCT\MQATX2OBI2019Q3""")
         //val testDir = new File("""D:\tmp\julia\bad""")
         if (args.isEmpty && (testDir.isDirectory)) testDir
         else new File(args.head)
