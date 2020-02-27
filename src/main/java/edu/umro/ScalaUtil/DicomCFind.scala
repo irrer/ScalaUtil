@@ -132,127 +132,79 @@ object DicomCFind extends IdentifierHandler with Logging {
 
     val al = new AttributeList
 
-    if (true) {
-      val a = AttributeFactory.newAttribute(TagFromName.PatientID)
-      //a.addValue("000000065")
-      //a.addValue("$T1boxblk")
-      //a.addValue("0098")
-      //a.addValue("QASRSWL1")
-      a.addValue("MQATX1OBIQA2019Q3")
+    def put(tag: AttributeTag): Unit = {
+      val a = AttributeFactory.newAttribute(tag)
       al.put(a)
     }
 
-    if (true) {
-      val a = AttributeFactory.newAttribute(TagFromName.Modality)
-      //a.addValue("RTIMAGE")
-      a.addValue("RTPLAN")
-      //a.addValue("CT")
-      //a.addValue("REG")
-      //a.addValue("RTRECORD")
+    def putValue(value: String, tag: AttributeTag): Unit = {
+      val a = AttributeFactory.newAttribute(tag)
+      a.addValue(value)
       al.put(a)
     }
 
-    if (true) {
-      val a = AttributeFactory.newAttribute(TagFromName.SOPInstanceUID)
-      al.put(a)
-    }
+    //    TagFromName.AcquisitionDate
+    //    TagFromName.ContentDate
+    //    TagFromName.InstanceCreationDate
+    //    TagFromName.Modality
+    //    TagFromName.NumberOfBeams
+    //    TagFromName.PatientID
+    //    TagFromName.PatientName
+    //    TagFromName.RTPlanDate
+    //    TagFromName.RTPlanDescription
+    //    TagFromName.RTPlanLabel
+    //    TagFromName.RTPlanTime
+    //    TagFromName.SeriesDescription
+    //    TagFromName.SeriesInstanceUID
+    //    TagFromName.SOPInstanceUID
+    //    TagFromName.StudyDate
+    //    TagFromName.StudyDescription
+    //    TagFromName.StudyInstanceUID
 
-    if (true) {
-      val a = AttributeFactory.newAttribute(TagFromName.NumberOfBeams)
-      al.put(a)
-    }
+    // putValue("1.2.246.352.62.2.4789835203298055753.12840502810399438481", TagFromName.SeriesInstanceUID)
+    //putValue("MQATX2OBI2019Q3", TagFromName.PatientID)
+    put(TagFromName.PatientID)
+    put(TagFromName.SOPInstanceUID)
+    //putValue("1.2.246.352.61.2.4683805916517294552.1308322119395909555", TagFromName.SeriesInstanceUID)
+    //putValue("1.2.246.352.71.2.427549902257.4634976.20190825123541", TagFromName.SeriesInstanceUID)
+    //putValue("1.2.246.352.71.2.824327626427.4631129.20190821171552", TagFromName.SeriesInstanceUID)
+    //putValue("1.2.246.352.221.47109383203357140424171245409074821033", TagFromName.SeriesInstanceUID)
+    putValue("1.2.246.352.62.2.4789835203298055753.12840502810399438481", TagFromName.SeriesInstanceUID)
+    put(TagFromName.Modality)
+    put(TagFromName.SeriesDate)
+    put(TagFromName.SeriesTime)
+    //put(TagFromName.ContentDate)
+    //put(TagFromName.ContentTime)
+    //putValue("1.2.246.352.61.2.5649017917321910891.9616106119503134379", TagFromName.SeriesInstanceUID)
 
-    if (true) {
-      val a = AttributeFactory.newAttribute(TagFromName.RTPlanTime)
-      al.put(a)
-    }
+    //put(TagFromName.Modality)
 
-    if (true) {
-      val a = AttributeFactory.newAttribute(TagFromName.RTPlanLabel)
-      //      a.addValue("20190628")
-      al.put(a)
-    }
+    println("query:\n--------------------------------\n" + al.toString.replace('\0', ' ') + "--------------------------------")
 
-    if (true) {
-      val a = AttributeFactory.newAttribute(TagFromName.PatientName)
-      //      a.addValue("20190628")
-      al.put(a)
-    }
-
-    if (true) {
-      val a = AttributeFactory.newAttribute(TagFromName.InstanceCreationDate)
-      //      a.addValue("20190628")
-      al.put(a)
-    }
-
-    if (true) {
-      val a = AttributeFactory.newAttribute(TagFromName.SeriesInstanceUID)
-      //a.addValue("1.2.246.352.62.2.5521482476547391701.18195090857756125851")
-      al.put(a)
-    }
-
-    if (true) {
-      val a = AttributeFactory.newAttribute(TagFromName.SeriesDescription)
-      //      a.addValue("20190628")
-      al.put(a)
-    }
-
-    if (true) {
-      val a = AttributeFactory.newAttribute(TagFromName.StudyInstanceUID)
-      //      a.addValue("20190628")
-      al.put(a)
-    }
-
-    if (true) {
-      val a = AttributeFactory.newAttribute(TagFromName.StudyDescription)
-      //      a.addValue("20190628")
-      al.put(a)
-    }
-
-    if (true) {
-      val a = AttributeFactory.newAttribute(TagFromName.RTPlanDate)
-      al.put(a)
-    }
-
-    if (true) {
-      val a = AttributeFactory.newAttribute(TagFromName.RTPlanDescription)
-      al.put(a)
-    }
-
-    if (true) {
-      val a = AttributeFactory.newAttribute(TagFromName.StudyDate)
-      //      a.addValue("20160214")
-      al.put(a)
-    }
-
-    if (true) {
-      val a = AttributeFactory.newAttribute(TagFromName.AcquisitionDate)
-      //      a.addValue("20190517")
-      al.put(a)
-    }
-
-    if (true) {
-      val a = AttributeFactory.newAttribute(TagFromName.ContentDate)
-      //      a.addValue("20190517")
-      al.put(a)
-    }
-
-    println("query:\n--------------------------------\n" + al + "--------------------------------")
-
-    for (qrl <- QueryRetrieveLevel.values; qrim <- QueryRetrieveInformationModel.values) {
+    //for (qrl <- QueryRetrieveLevel.values; qrim <- QueryRetrieveInformationModel.values) {
+    for (qrl <- Seq(QueryRetrieveLevel.IMAGE); qrim <- Seq(QueryRetrieveInformationModel.StudyRoot)) {
       println("query level: " + qrl + "    query retrieve info model: " + qrim)
       val resultList = cfind(
         callingAETitle, // callingAETitle
         calledPacs, // calledPacs
         al, // attributeList
         qrl, // queryLevel
-        Some(10), // limit
+        Some(5000), // limit
         qrim)
 
       println("Number of results: " + resultList.size)
+      //      resultList.map(r => {
+      //        val m = r.get(TagFromName.Modality).getSingleStringValueOrEmptyString
+      //        val s = r.get(TagFromName.SeriesInstanceUID).getSingleStringValueOrEmptyString
+      //        println(m.formatted("%-10s  ") + s)
+      //      })
 
       println(resultList.map(r => r.toString.replace('\0', ' ')).mkString("\n"))
       println("\nNumber of results: " + resultList.size)
+      System.exit(99)
+      if (resultList.size > 1) {
+        println("Got multiple results")
+      }
       println("-----------------------------------------------------------------------------------------")
       println("-----------------------------------------------------------------------------------------")
       Thread.sleep(500)

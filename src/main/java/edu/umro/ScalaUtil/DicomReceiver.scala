@@ -92,7 +92,7 @@ class DicomReceiver(mainDir: File, myPacs: PACS, receivedObjectHandler: Received
    *
    * @return true on success
    */
-  def cmove(specification: AttributeList, srcPacs: PACS, dstPacs: PACS, affectedSOPClass: String): Option[String] = {
+  def cmove(specification: AttributeList, srcPacs: PACS, dstPacs: PACS, affectedSOPClass: String = SOPClass.PatientRootQueryRetrieveInformationModelMove): Option[String] = {
     if (subDirFile.isDefined) {
       subDirFile.get.mkdirs
       val specAsString = specification.toString.replace('\0', ' ')
@@ -126,10 +126,10 @@ class DicomReceiver(mainDir: File, myPacs: PACS, receivedObjectHandler: Received
     } else Some("The subdirectory value must be set before performing a C-MOVE.  Use setSubDir")
   }
 
-  @deprecated("Use <code>cmove(specification: AttributeList, srcPacs: PACS, dstPacs: PACS, affectedSOPClass: String)</code> instead.")
-  def cmove(specification: AttributeList, srcPacs: PACS, dstPacs: PACS): Option[String] = {
-    cmove(specification: AttributeList, srcPacs: PACS, dstPacs, SOPClass.PatientRootQueryRetrieveInformationModelMove)
-  }
+  //  @deprecated("Use <code>cmove(specification: AttributeList, srcPacs: PACS, dstPacs: PACS, affectedSOPClass: String)</code> instead.")
+  //  def cmove(specification: AttributeList, srcPacs: PACS, dstPacs: PACS): Option[String] = {
+  //    cmove(specification: AttributeList, srcPacs: PACS, dstPacs, SOPClass.PatientRootQueryRetrieveInformationModelMove)
+  //  }
 
   /** Start a DICOM receiver. */
   private def startReceiver: Unit = {
@@ -144,9 +144,12 @@ class DicomReceiver(mainDir: File, myPacs: PACS, receivedObjectHandler: Received
 
 object DicomReceiver extends Logging {
 
+  var count = 0
+
   class DefaultReceivedObjectHandler extends ReceivedObjectHandler {
     override def sendReceivedObjectIndication(fileName: String, transferSyntax: String, callingAETitle: String): Unit = {
       logger.info("Received DICOM from " + callingAETitle + " file " + " DICOM file " + fileName)
+      count = count + 1
     }
   }
 
@@ -164,15 +167,18 @@ object DicomReceiver extends Logging {
   def main(args: Array[String]): Unit = {
 
     val mainDir = new File("""D:\tmp\archive_migration_from_xstor_to_velocity\valid""")
+    println("Putting files in: " + mainDir.getAbsolutePath)
     mainDir.mkdirs
 
     val cpXstorPacs = new PACS("CP_XSTOR_IRRER", "141.214.125.209", 15656)
     val irrerPacs = new PACS("IRRER", "141.214.125.209", 15678)
     val umroarchivePacs = new PACS("UMRO_ARCHIVE", "10.30.3.69", 104)
-    val evalpacs = new PACS("EVAL1109", "141.214.124.189", 104)
+    val evalPacs = new PACS("EVAL1109", "141.214.124.189", 104)
+    val wlqaTestPacs = new PACS("WLQA_TEST", "141.214.125.209", 5682)
+    val clinPacs = new PACS("VMSDBD", "10.30.65.100", 105)
 
-    val thisPacs = irrerPacs
-    val thatPacs = evalpacs
+    val thisPacs = wlqaTestPacs
+    val thatPacs = clinPacs
 
     val dicomReceiver = new DicomReceiver(mainDir, thisPacs)
 
@@ -183,24 +189,32 @@ object DicomReceiver extends Logging {
     //val seriesUID = "1.3.12.2.1107.5.2.19.45228.201705181425239536778305.1.0.0"
     //val seriesUID = "1.3.12.2.1107.5.2.19.45228.201606231230353215404761.0.0.0"
     //val seriesUID = "1.3.12.2.1107.5.2.19.45228.2018111612583360918723037.0.0.0"
-    val seriesUID = "1.3.12.2.1107.5.2.19.45228.2018012410263353336317985.0.0.0"
-    val studyInstanceUID = "1.2.840.113704.1.111.5364.1467809429.7"
+    //val seriesUID = "1.3.12.2.1107.5.2.19.45228.2018012410263353336317985.0.0.0"
+    //val seriesUID = "1.2.246.352.71.2.427549902257.4634976.20190825123541"
+    //val seriesUID = "1.2.246.352.71.2.824327626427.4631129.20190821171552"
+    //val seriesUID = "1.2.246.352.221.47109383203357140424171245409074821033"
+    //val seriesUID = "1.2.246.352.61.2.5649017917321910891.9616106119503134379" // works
 
+    val SOPInstanceUID = "1.2.246.352.63.1.5661800265424807387.1120403681608530336"
+
+    //val studyInstanceUID = "1.2.840.113704.1.111.5364.1467809429.7"
+
+    val id = addAttr(TagFromName.SOPInstanceUID, SOPInstanceUID, buildIdentifier)
     //val id = addAttr(TagFromName.SeriesInstanceUID, seriesUID, buildIdentifier)
-    val id = addAttr(TagFromName.StudyInstanceUID, studyInstanceUID, buildIdentifier)
+    //val id = addAttr(TagFromName.StudyInstanceUID, studyInstanceUID, buildIdentifier)
 
     println("localPacs: " + thisPacs)
     println("remotePacs: " + thatPacs)
 
-    //dicomReceiver.setSubDir(seriesUID)
-    dicomReceiver.setSubDir(studyInstanceUID)
+    dicomReceiver.setSubDir(SOPInstanceUID)
+    //dicomReceiver.setSubDir(studyInstanceUID)
     println("Putting files into " + dicomReceiver.getSubDir.getAbsolutePath)
     Utility.deleteFileTree(dicomReceiver.getSubDir)
-    val success = dicomReceiver.cmove(id, thatPacs, thisPacs)
-
+    val success = dicomReceiver.cmove(id, thatPacs, thisPacs, SOPClass.PatientRootQueryRetrieveInformationModelMove)
+    println("Number of files received: " + count)
     success match {
       case Some(msg) => println("Failed: " + msg)
-      case _ => println("success")
+      case _ => println("success.")
     }
 
     System.exit(0)
