@@ -76,9 +76,10 @@ object Util {
    * Given a list, group them into smaller groups of a given size.  The last group in the list may be smaller than the others.
    */
   def sizedGroups[T](seq: Seq[T], groupSize: Int): Seq[Seq[T]] = {
+    val gs = Math.max(groupSize, 1)
     def addGroup[T](seq: Seq[T], grp: Seq[Seq[T]]): Seq[Seq[T]] = {
       if (seq.isEmpty) grp
-      else addGroup(seq.drop(groupSize), grp :+ seq.take(groupSize))
+      else addGroup(seq.drop(gs), grp :+ seq.take(gs))
     }
     addGroup(seq, Seq[Seq[T]]())
   }
