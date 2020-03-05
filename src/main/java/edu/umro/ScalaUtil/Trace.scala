@@ -10,20 +10,36 @@ object Trace {
 
   private val dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS")
 
+  /** Time of last trace message. */
+  private var time = System.currentTimeMillis
+
+  /** If true, do tracing.  If false, do not trace.  Default is true. */
+  private var active = true
+
+  def on = { active = true }
+  def off = { active = false }
+  def isOn = active
+
   private def current: String = {
     val se = Thread.currentThread.getStackTrace()(3)
     val line = se.getLineNumber
     val method = se.getMethodName
     val threadName = Thread.currentThread.getName
-    "Trace " + dateFormat.format(new Date) + " | " + threadName + " | " + se.toString
+    val now = System.currentTimeMillis
+    val elapsedText = {
+      val e = (now - time) / 1000.0
+      e.formatted("%6.3f")
+    }
+    time = now
+    "Trace " + dateFormat.format(new Date(now)) + " | " + threadName + " | " + elapsedText + " | " + se.toString
   }
 
-  /** Print current line. */
+  /** Print current line with time elapsed since last trace. */
   def trace: Unit = {
     println(current)
   }
 
-  /** Print current line and parameter value. */
+  /** Print current line and parameter value with time elapsed since last trace. */
   def trace(v: Any): Unit = {
     val text = if (v == null) "null" else v.toString.replaceAll("\0", " ")
     println(current + " : " + text)
@@ -31,7 +47,8 @@ object Trace {
 
   /** For testing only. */
   def main(args: Array[String]): Unit = {
-    trace("hey")
+    trace("hey E")
+    Thread.sleep(100)
     trace
   }
 
