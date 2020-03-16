@@ -362,6 +362,13 @@ object DicomUtil {
   }
 
   /**
+   * Get the attribute lists of a sequence attribute.
+   */
+  def alOfSeq(al: SequenceAttribute): Seq[AttributeList] = {
+    (0 until al.getNumberOfItems).map(i => al.getItem(i).getAttributeList)
+  }
+
+  /**
    * Get all instances of attributes with a tag on the given list by searching the given <code>AttributeList</code> recursively.
    */
   def findAll(attributeList: AttributeList, tagSet: Set[AttributeTag]): IndexedSeq[Attribute] = {
