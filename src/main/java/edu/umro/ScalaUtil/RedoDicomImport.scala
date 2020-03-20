@@ -52,16 +52,15 @@ object RedoDicomImport extends Logging {
 
     try {
 
-      val expDirList = listFiles(new File("""D:\tmp\mig\redone"""))
-      val expFileList = expDirList.map(d => listFiles(d)).flatten
-      val sopList = expFileList.map(f => new DF(f))
-      Trace.trace("Number of exported files: " + sopList.size)
+      val velocityFileList = listFiles(new File("""D:\tmp\mig\velocity_stuck_again"""))
+      val velocitySopList = velocityFileList.map(f => new DF(f))
+      Trace.trace("Number of files in Velocity: " + velocitySopList.size)
 
-      val inboxSopList = listFiles(new File("""D:\tmp\mig\redo""")).map(f => new DF(f))
+      val inboxSopList = listFiles(new File("""\\velocity\m$\Velocity\Databases\UMRO_ARCHIVE_DB\DicomInbox""")).map(f => new DF(f))
       Trace.trace("Number of files in inbox: " + inboxSopList.size)
 
       inboxSopList.map(in => {
-        sopList.find(df => df.sop.equals(in.sop)) match {
+        velocitySopList.find(df => df.sop.equals(in.sop)) match {
           case Some(m) => println("ls " + in.file.getName + " ../redone/" + m.file.getParentFile.getName + "/" + m.file.getName)
           case _ => println("Failed: " + in.file.getName)
         }
