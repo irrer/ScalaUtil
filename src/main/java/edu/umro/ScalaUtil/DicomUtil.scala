@@ -30,6 +30,7 @@ import resource.managed
 import java.util.zip.ZipInputStream
 import scala.annotation.tailrec
 import com.pixelmed.dicom.FileMetaInformation
+import java.util.Date
 
 object DicomUtil {
 
@@ -62,6 +63,28 @@ object DicomUtil {
       Some(upper.getTime + ms)
     } catch {
       case t: Throwable => None
+    }
+  }
+
+  /** Used for converting a DICOM date+time pair into a <code>Date</code> */
+  private val dicomDateTimeFormat = new SimpleDateFormat("yyyyMMddHHmmss.SSS")
+
+  /**
+   * Convert date and time pair into java.util.Date.  Note that time will only be accurate to the ms.  Note that
+   * the date and time must be done together so as to get the time zone and daylight savings time right.
+   */
+  def getTimeAndDate(al: AttributeList, dateTag: AttributeTag, timeTag: AttributeTag): Option[Date] = {
+    try {
+      val dateText = al.get(dateTag).getSingleStringValueOrNull
+      val timeText = {
+        val t = al.get(timeTag).getSingleStringValueOrNull
+        val t2 = if (t.contains('.')) t + "000"
+        else t + ".000"
+        t2.take(10)
+      }
+      Some(dicomDateTimeFormat.parse(dateText + timeText))
+    } catch {
+      case e: Throwable => None
     }
   }
 
