@@ -66,7 +66,7 @@ class PeriodicRestart(restartTime: Long) extends Runnable with Logging {
     val interval = (stop.getTimeInMillis - now.getTimeInMillis + oneDay) % oneDay
 
     val stopDesc = new Date(if (stop.getTimeInMillis <= now.getTimeInMillis) stop.getTimeInMillis + oneDay else stop.getTimeInMillis).toString
-    logger.info("Service restart time" + stopDesc + "    Wait time before restarting: " + getIntervalDescription(interval))
+    logger.info("Service restart time " + stopDesc + "    Wait time before restarting: " + getIntervalDescription(interval))
     interval
   }
 
