@@ -15,6 +15,7 @@ import scala.annotation.tailrec
 import edu.umro.util.Utility
 import java.io.FileOutputStream
 import java.io.FileInputStream
+import java.io.FileWriter
 
 object FileUtil {
 
@@ -288,6 +289,21 @@ object FileUtil {
     val result = readBinaryFile(file)
     if (result.isLeft) Left(result.left.get)
     else Right(new String(result.right.get))
+  }
+
+  /**
+   * Append the given data to the given file.  Return None on success.
+   */
+  def appendFile(file: File, data: Array[Byte]): Option[Throwable] = {
+    try {
+      val outputStream = new FileOutputStream(file, true)
+      outputStream.write(data)
+      outputStream.flush
+      outputStream.close
+      None
+    } catch {
+      case t: Throwable => Some(t)
+    }
   }
 
   /**

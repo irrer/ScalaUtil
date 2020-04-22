@@ -165,7 +165,11 @@ object DicomCFind extends IdentifierHandler with Logging {
     //putValue("MQATX2OBI2019Q3", TagFromName.PatientID)
     put(TagFromName.PatientID)
     put(TagFromName.SOPInstanceUID)
-    putValue("1.2.246.352.61.2.5637826687569589923.4080709911713203386", TagFromName.SeriesInstanceUID)
+
+    //putValue("1.2.246.352.61.2.4820541632182027083.18052915770238220434", TagFromName.SeriesInstanceUID)  // RTIMAGE
+    putValue("1.2.246.352.61.2.5695743813589779673.4163704829850281406", TagFromName.SeriesInstanceUID) // REG
+    //putValue("1.2.246.352.61.2.5437133271630258722.6697236167653045664", TagFromName.SeriesInstanceUID)
+    //putValue("1.2.246.352.61.2.5637826687569589923.4080709911713203386", TagFromName.SeriesInstanceUID)
     //putValue("1.2.246.352.61.2.4683805916517294552.1308322119395909555", TagFromName.SeriesInstanceUID)
     //putValue("1.2.246.352.71.2.427549902257.4634976.20190825123541", TagFromName.SeriesInstanceUID)
     //putValue("1.2.246.352.71.2.824327626427.4631129.20190821171552", TagFromName.SeriesInstanceUID)
@@ -174,8 +178,10 @@ object DicomCFind extends IdentifierHandler with Logging {
     put(TagFromName.Modality)
     put(TagFromName.SeriesDate)
     put(TagFromName.SeriesTime)
-    //put(TagFromName.ContentDate)
-    //put(TagFromName.ContentTime)
+    put(TagFromName.ContentDate)
+    put(TagFromName.ContentTime)
+    put(TagFromName.AcquisitionDate)
+    put(TagFromName.AcquisitionTime)
     //putValue("1.2.246.352.61.2.5649017917321910891.9616106119503134379", TagFromName.SeriesInstanceUID)
 
     //put(TagFromName.Modality)
