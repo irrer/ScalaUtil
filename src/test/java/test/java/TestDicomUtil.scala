@@ -68,4 +68,25 @@ class TestDicomUtil extends FlatSpec with Matchers {
     sopBefore should be(sopAfter)
 
   }
+
+  "mixed data" should "get just DICOM and ignore non-DICOM" in {
+    // create zip containing DICOM and some non-DICOM content
+    val dir = new File("""src\test\resources""")
+    val data = FileUtil.readFileTreeToZipByteArray(Seq(dir))
+
+    var countOfDicomFiles = 0
+    def countDicom(file: File): Unit = {
+      if (file.isDirectory) {
+        file.listFiles.map(f => countDicom(f))
+      } else if (file.getName.toLowerCase.endsWith(".dcm"))
+        countOfDicomFiles = countOfDicomFiles + 1
+    }
+    countDicom(dir)
+
+    val alSeq = DicomUtil.zippedByteArrayToDicom(data)
+    Trace.trace("countOfDicomFiles: " + countOfDicomFiles)
+
+    alSeq.size should be(countOfDicomFiles)
+
+  }
 }

@@ -150,7 +150,7 @@ object FileUtil {
     }
   }
 
-  def readFileTreeToZipByteArray(inFileList: Seq[File], excludePatternList: Seq[String], excludeFileList: Seq[File]): Array[Byte] = {
+  def readFileTreeToZipByteArray(inFileList: Seq[File], excludePatternList: Seq[String] = Seq[String](), excludeFileList: Seq[File] = Seq[File]()): Array[Byte] = {
     managed(new ByteArrayOutputStream) acquireAndGet {
       baos =>
         {

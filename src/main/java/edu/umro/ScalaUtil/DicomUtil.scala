@@ -490,9 +490,15 @@ object DicomUtil {
           next(zipIn, alList)
         else {
           val al = new AttributeList
-          val dicomInputStream = new DicomInputStream(zipIn)
-          al.read(dicomInputStream)
-          next(zipIn, alList :+ al)
+          val attrList: Seq[AttributeList] = try {
+            val dicomInputStream = new DicomInputStream(zipIn)
+            al.read(dicomInputStream)
+            Seq(al)
+          } catch {
+            // if there is an error, then assume that this is not a DICOM file and ignore it
+            case t: Throwable => Seq[AttributeList]()
+          }
+          next(zipIn, alList ++ attrList)
         }
       }
     }
