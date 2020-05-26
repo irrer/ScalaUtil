@@ -4,10 +4,14 @@ import java.io.File
 import com.pixelmed.dicom.AttributeList
 import com.pixelmed.dicom.TagFromName
 import com.pixelmed.dicom.AttributeTag
+import java.util.Date
+import java.text.SimpleDateFormat
 
 object TreeifyDicom {
 
-  case class DicomObj(PatientID: String, StudyInstanceUID: String, SeriesInstanceUID: String, Modality: String, file: File) {
+  case class DicomObj(PatientID: String, StudyInstanceUID: String, SeriesInstanceUID: String, Modality: String, file: File, date: Date) {
+    val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH-mm-ss.SSS")
+    val dateText = dateFormat.format(date)
 
     def makeSeriesDir(index: Int, studyDir: File): File = {
       val seriesDir = new File(studyDir, Modality + "_" + index.formatted("%02d"))
@@ -26,11 +30,28 @@ object TreeifyDicom {
       seriesDir
     }
 
-    def moveTo(seriesDir: File, instanceIndex: Int, outDir: File) = {
-      val destFile = new File(seriesDir, Modality + "_" + (instanceIndex + 1).formatted("%03d") + ".dcm")
+    def moveTo(seriesDir: File, dicomObj: DicomObj, instanceIndex: Int, outDir: File) = {
+      val destFile = new File(seriesDir, Modality + "_" + (instanceIndex + 1).formatted("%03d") + "_" + dateText + ".dcm")
       file.renameTo(destFile)
       print(".")
     }
+  }
+
+  /**
+   * Search for a usable date+time in an attribute list.  First valid one wins, so the order matters.
+   */
+  private val dateTimeTagPairs = Seq(
+    (TagFromName.TreatmentDate, TagFromName.TreatmentTime),
+    (TagFromName.ContentDate, TagFromName.ContentTime),
+    (TagFromName.InstanceCreationDate, TagFromName.InstanceCreationTime),
+    (TagFromName.AcquisitionDate, TagFromName.AcquisitionTime),
+    (TagFromName.SeriesDate, TagFromName.SeriesTime),
+    (TagFromName.StudyDate, TagFromName.StudyTime),
+    (TagFromName.RTPlanDate, TagFromName.RTPlanTime),
+    (TagFromName.StructureSetDate, TagFromName.StructureSetTime))
+
+  private def getDateTime(al: AttributeList): Date = {
+    dateTimeTagPairs.map(dtp => DicomUtil.getTimeAndDate(al, dtp._1, dtp._2)).flatten.head
   }
 
   private def readFile(dicomFile: File) = {
@@ -39,7 +60,7 @@ object TreeifyDicom {
       al.read(dicomFile)
       def getAttr(tag: AttributeTag) = new String(al.get(tag).getSingleStringValueOrEmptyString)
 
-      Some(new DicomObj(getAttr(TagFromName.PatientID), getAttr(TagFromName.StudyInstanceUID), getAttr(TagFromName.SeriesInstanceUID), getAttr(TagFromName.Modality), dicomFile))
+      Some(new DicomObj(getAttr(TagFromName.PatientID), getAttr(TagFromName.StudyInstanceUID), getAttr(TagFromName.SeriesInstanceUID), getAttr(TagFromName.Modality), dicomFile, getDateTime(al)))
     } catch {
       case t: Throwable => {
         println("Unable to read file as DICOM.  Ignoring: " + dicomFile.getAbsolutePath)
@@ -51,7 +72,7 @@ object TreeifyDicom {
   private def moveSeries(seriesList: Seq[DicomObj], studyIndex: Int, seriesIndex: Int, outDir: File, regWithCBCT: Boolean) = {
     val seriesDir = seriesList.head.getSeriesDir(studyIndex, outDir)
     print("Putting series in " + seriesDir.getAbsolutePath + "  ")
-    seriesList.zipWithIndex.map(df => df._1.moveTo(seriesDir, df._2, outDir))
+    seriesList.zipWithIndex.map(df => df._1.moveTo(seriesDir, df._1, df._2, outDir))
     println
   }
 
@@ -65,6 +86,12 @@ object TreeifyDicom {
     studyList.zipWithIndex.map(study => moveStudy(study._1, study._2, outDir, regWithCBCT))
   }
 
+  private def getFilesInTree(file: File): Seq[File] = {
+    if (file.isDirectory) {
+      file.listFiles.toSeq.map(f => getFilesInTree(f)).flatten
+    } else Seq(file)
+  }
+
   def main(args: Array[String]): Unit = {
     try {
       val start = System.currentTimeMillis
@@ -76,7 +103,8 @@ object TreeifyDicom {
       }
       val inDir = new File(args(0))
       val outDir = new File(args(1))
-      val fileList = inDir.listFiles.toSeq
+
+      val fileList = getFilesInTree(inDir)
       println("Number of files to process: " + fileList.size)
       val dicomFileList = fileList.map(f => readFile(f)).flatten
       println("Number of DICOM files to process: " + dicomFileList.size)
