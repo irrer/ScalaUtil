@@ -163,11 +163,17 @@ object DicomCFind extends IdentifierHandler with Logging {
 
     // putValue("1.2.246.352.62.2.4789835203298055753.12840502810399438481", TagFromName.SeriesInstanceUID)
     //putValue("MQATX2OBI2019Q3", TagFromName.PatientID)
-    put(TagFromName.PatientID)
-    put(TagFromName.SOPInstanceUID)
+    //put(TagFromName.PatientID)
+    //putValue("MQATX6OBI2019Q4", TagFromName.PatientID)
+    //putValue("MQATX*", TagFromName.PatientID)
 
-    //putValue("1.2.246.352.61.2.4820541632182027083.18052915770238220434", TagFromName.SeriesInstanceUID)  // RTIMAGE
-    putValue("1.2.246.352.61.2.5695743813589779673.4163704829850281406", TagFromName.SeriesInstanceUID) // REG
+    //put(TagFromName.SeriesInstanceUID)
+
+    //putValue("1.2.246.352.62.2.5684705254867527398.10742684453512482453", TagFromName.SeriesInstanceUID) // RTIMAGE
+    //putValue("1.2.246.352.61.2.4833202561572915675.4243541600504411268", TagFromName.SeriesInstanceUID) //
+    //putValue("1.2.246.352.71.2.427549902257.4634976.20190825123541", TagFromName.SeriesInstanceUID) // no slices
+    //putValue("1.2.246.352.61.2.5695743813589779673.4163704829850281406", TagFromName.SeriesInstanceUID) // REG
+    //putValue("1.2.246.352.61.2.4820541632182027083.18052915770238220434", TagFromName.SeriesInstanceUID)  // RTIMAGE (works)
     //putValue("1.2.246.352.61.2.5437133271630258722.6697236167653045664", TagFromName.SeriesInstanceUID)
     //putValue("1.2.246.352.61.2.5637826687569589923.4080709911713203386", TagFromName.SeriesInstanceUID)
     //putValue("1.2.246.352.61.2.4683805916517294552.1308322119395909555", TagFromName.SeriesInstanceUID)
@@ -175,13 +181,21 @@ object DicomCFind extends IdentifierHandler with Logging {
     //putValue("1.2.246.352.71.2.824327626427.4631129.20190821171552", TagFromName.SeriesInstanceUID)
     //putValue("1.2.246.352.221.47109383203357140424171245409074821033", TagFromName.SeriesInstanceUID)
     //putValue("1.2.246.352.62.2.4789835203298055753.12840502810399438481", TagFromName.SeriesInstanceUID)
+    //putValue("1.2.246.352.61.2.5150413118730346656.17137052904785921953", TagFromName.SeriesInstanceUID) // CT TX2
+    putValue("1.2.246.352.61.2.5381207706442521315.17095139606086369684", TagFromName.SeriesInstanceUID) // Daily QA REG TX6 8 May 2020
+    putValue("1.2.246.352.61.2.5712771626225617482.7784404980121987989", TagFromName.SeriesInstanceUID) // Daily QA RTIMAGE TX6 8 May 2020
+        
+    put(TagFromName.SOPInstanceUID)
+
     put(TagFromName.Modality)
-    put(TagFromName.SeriesDate)
-    put(TagFromName.SeriesTime)
+    //putValue("RTIMAGE", TagFromName.Modality)
+    //put(TagFromName.SeriesDate)
+    //    put(TagFromName.SeriesTime)
     put(TagFromName.ContentDate)
     put(TagFromName.ContentTime)
-    put(TagFromName.AcquisitionDate)
-    put(TagFromName.AcquisitionTime)
+    //put(TagFromName.SeriesInstanceUID)
+    //put(TagFromName.AcquisitionDate)
+    //put(TagFromName.AcquisitionTime)
     //putValue("1.2.246.352.61.2.5649017917321910891.9616106119503134379", TagFromName.SeriesInstanceUID)
 
     //put(TagFromName.Modality)
@@ -189,8 +203,9 @@ object DicomCFind extends IdentifierHandler with Logging {
     println("query:\n--------------------------------\n" + al.toString.replace('\0', ' ') + "--------------------------------")
 
     //for (qrl <- QueryRetrieveLevel.values; qrim <- QueryRetrieveInformationModel.values) {
+    //for (qrl <- Seq(QueryRetrieveLevel.IMAGE, QueryRetrieveLevel.SERIES, QueryRetrieveLevel.STUDY); qrim <- Seq(QueryRetrieveInformationModel.StudyRoot, QueryRetrieveInformationModel.PatientRoot)) {
     for (qrl <- Seq(QueryRetrieveLevel.IMAGE); qrim <- Seq(QueryRetrieveInformationModel.StudyRoot)) {
-      println("query level: " + qrl + "    query retrieve info model: " + qrim)
+      //for (qrl <- Seq(QueryRetrieveLevel.STUDY); qrim <- Seq(QueryRetrieveInformationModel.PatientRoot)) {
       val resultList = cfind(
         callingAETitle, // callingAETitle
         calledPacs, // calledPacs
@@ -198,22 +213,21 @@ object DicomCFind extends IdentifierHandler with Logging {
         qrl, // queryLevel
         Some(5000), // limit
         qrim)
+      if (resultList.nonEmpty) {
+        println("query level: " + qrl + "    query retrieve info model: " + qrim)
 
-      println("Number of results: " + resultList.size)
-      //      resultList.map(r => {
-      //        val m = r.get(TagFromName.Modality).getSingleStringValueOrEmptyString
-      //        val s = r.get(TagFromName.SeriesInstanceUID).getSingleStringValueOrEmptyString
-      //        println(m.formatted("%-10s  ") + s)
-      //      })
+        //      resultList.map(r => {
+        //        val m = r.get(TagFromName.Modality).getSingleStringValueOrEmptyString
+        //        val s = r.get(TagFromName.SeriesInstanceUID).getSingleStringValueOrEmptyString
+        //        println(m.formatted("%-10s  ") + s)
+        //      })
 
-      println(resultList.map(r => r.toString.replace('\0', ' ')).mkString("\n"))
-      println("\nNumber of results: " + resultList.size)
-      System.exit(99)
-      if (resultList.size > 1) {
-        println("Got multiple results")
+        println(resultList.map(r => r.toString.replace('\0', ' ')).mkString("\n"))
+        println("\nNumber of results: " + resultList.size)
+
+        println("-----------------------------------------------------------------------------------------")
+        println("-----------------------------------------------------------------------------------------")
       }
-      println("-----------------------------------------------------------------------------------------")
-      println("-----------------------------------------------------------------------------------------")
       Thread.sleep(500)
     }
 
