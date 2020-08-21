@@ -177,6 +177,41 @@ object FileUtil {
   }
 
   /**
+   * Given an input stream that defines zipped content, write it as a sequence of named
+   * byte arrays.  Directories in the input stream are not listed in the returned list.
+   *
+   * @param inputStream: Input stream.
+   *
+   * @return list of (name,content) tuples.
+   *
+   */
+  def writeZipToNamedByteArrays(inputStream: InputStream): Seq[(String, Array[Byte])] = {
+
+    val out = managed(new ZipInputStream(inputStream)) acquireAndGet {
+      zipIn =>
+        {
+          @tailrec
+          def next(list: Seq[(String, Array[Byte])]): Seq[(String, Array[Byte])] = {
+            val entry = zipIn.getNextEntry
+            if (entry != null) {
+              if (!entry.isDirectory) {
+                val bos = new ByteArrayOutputStream
+                val size = copyStream(zipIn, bos)
+                bos.close
+                val result = (entry.getName, bos.toByteArray)
+                next(list :+ result)
+              } else
+                next(list)
+            } else list
+          }
+          // Start processing
+          next(Seq[(String, Array[Byte])]())
+        }
+    }
+    out
+  }
+
+  /**
    * Given an input stream, write it as a zipped tree of files.
    *
    * @param inputStream: Input stream.

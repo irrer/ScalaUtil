@@ -474,39 +474,37 @@ object DicomUtil {
   }
 
   /**
-   * Read a list of attribute lists from a zipped byte array.
+   * Given a byte array, attempt to convert it to an <code>AttributeList</code>.
+   *
+   * @param data Bytes representing a single DICOM object.
+   *
+   * @return DICOM, or None if the content doesn't not represent a single DICOM object.
    */
-  def zippedByteArrayToDicom(data: Array[Byte]): Seq[AttributeList] = {
+  def byteArrayToDicom(data: Array[Byte]): Option[AttributeList] = {
+    import scala.util.{ Try, Success, Failure }
 
-    val byteArrayInputStream = new ByteArrayInputStream(data)
-
-    @tailrec
-    def next(zipIn: ZipInputStream, alList: Seq[AttributeList]): Seq[AttributeList] = {
-      val entry = zipIn.getNextEntry
-      if (entry == null)
-        alList
-      else {
-        if (entry.isDirectory)
-          next(zipIn, alList)
-        else {
-          val al = new AttributeList
-          val attrList: Seq[AttributeList] = try {
-            val dicomInputStream = new DicomInputStream(zipIn)
-            al.read(dicomInputStream)
-            Seq(al)
-          } catch {
-            // if there is an error, then assume that this is not a DICOM file and ignore it
-            case t: Throwable => Seq[AttributeList]()
-          }
-          next(zipIn, alList ++ attrList)
-        }
+    val result = {
+      Try {
+        val al = new AttributeList
+        val dis = new DicomInputStream(new ByteArrayInputStream(data))
+        al.read(dis)
+        al
+      } match {
+        // Note that the check for dicom.size > 1 should not be necessary, but I think somehow Try is messing up the result
+        case Success(dicom) if dicom.size > 1 => Some(dicom)
+        case _ => None
       }
     }
+    result
+  }
 
-    val list = managed(new ZipInputStream(byteArrayInputStream)) acquireAndGet {
-      zipIn => next(zipIn, Seq[AttributeList]())
-    }
-    list
+  /**
+   * Read a list of attribute lists from a zipped byte array.  Ignore non-DICOM content.
+   */
+  def zippedByteArrayToDicom(data: Array[Byte]): Seq[AttributeList] = {
+    val contentList = FileUtil.writeZipToNamedByteArrays(new ByteArrayInputStream(data)).map(_._2)
+    val dicomList = contentList.map(c => byteArrayToDicom(c)).filter(d => d.isDefined).map(d => d.get)
+    dicomList
   }
 
   /**

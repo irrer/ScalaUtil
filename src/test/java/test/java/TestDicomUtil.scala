@@ -85,6 +85,7 @@ class TestDicomUtil extends FlatSpec with Matchers {
 
     val alSeq = DicomUtil.zippedByteArrayToDicom(data)
     Trace.trace("countOfDicomFiles: " + countOfDicomFiles)
+    Trace.trace("alSeq.size: " + alSeq.size)
 
     alSeq.size should be(countOfDicomFiles)
 
