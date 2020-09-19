@@ -355,6 +355,26 @@ object FileUtil {
 
   def getFileSuffix(file: File): String = getFileSuffix(file.getName)
 
+  /**
+   * Recursively delete all of the files in a directory tree. The directory
+   * itself will be deleted.
+   *
+   * @param file
+   *            Top level file or directory whose files will be deleted. If
+   *            this is a regular file, then just this file will be deleted.
+   *
+   * @return True if all files successfully deleted.
+   */
+  def deleteFileTree(file: File): Boolean = {
+    try {
+      if (file.isDirectory) file.listFiles.map(child => deleteFileTree(child))
+      file.delete
+      !file.exists
+    } catch {
+      case t: Throwable => false
+    }
+  }
+
   def main(args: Array[String]): Unit = { // TODO rm
     // add comment to test git
     val j = edu.umro.ScalaUtil.FileUtil.replaceInvalidFileNameCharacters("oasijdfoaj", 'X')
