@@ -31,7 +31,9 @@ object Trace {
       e.formatted("%6.3f")
     }
     time = now
-    "Trace " + dateFormat.format(new Date(now)) + " | " + threadName + " | " + elapsedText + " | " + se.toString
+    // sometimes the thread is useful, but mostly it is just noise
+    //"Trace " + dateFormat.format(new Date(now)) + " | " + threadName + " | " + elapsedText + " | " + se.toString
+    "Trace " + dateFormat.format(new Date(now)) + " | " + elapsedText + " | " + se.toString
   }
 
   /** Print current line with time elapsed since last trace. */
