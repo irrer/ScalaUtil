@@ -143,6 +143,29 @@ object DicomCFind extends IdentifierHandler with Logging {
       al.put(a)
     }
 
+    def al2Human(al: AttributeList): String = {
+
+      val list = Seq(
+        TagFromName.PatientID,
+        TagFromName.PatientName,
+        TagFromName.Modality,
+        TagFromName.SeriesDate,
+        TagFromName.SeriesTime,
+        TagFromName.ContentDate,
+        TagFromName.ContentTime,
+        TagFromName.SeriesInstanceUID,
+        TagFromName.SOPInstanceUID)
+
+      def at2String(tag: AttributeTag): Option[String] = {
+        val at = al.get(tag)
+        val text = if (at == null) None
+        else Some(DicomUtil.dictionary.getNameFromTag(tag) + " : " + at.getSingleStringValueOrEmptyString)
+        text
+      }
+
+      list.map(tag => at2String(tag)).flatten.mkString("    ")
+    }
+
     //    TagFromName.AcquisitionDate
     //    TagFromName.ContentDate
     //    TagFromName.InstanceCreationDate
@@ -182,15 +205,20 @@ object DicomCFind extends IdentifierHandler with Logging {
     //putValue("1.2.246.352.221.47109383203357140424171245409074821033", TagFromName.SeriesInstanceUID)
     //putValue("1.2.246.352.62.2.4789835203298055753.12840502810399438481", TagFromName.SeriesInstanceUID)
     //putValue("1.2.246.352.61.2.5150413118730346656.17137052904785921953", TagFromName.SeriesInstanceUID) // CT TX2
-    putValue("1.2.246.352.61.2.5381207706442521315.17095139606086369684", TagFromName.SeriesInstanceUID) // Daily QA REG TX6 8 May 2020
-    putValue("1.2.246.352.61.2.5712771626225617482.7784404980121987989", TagFromName.SeriesInstanceUID) // Daily QA RTIMAGE TX6 8 May 2020
-        
-    put(TagFromName.SOPInstanceUID)
+    //putValue("1.2.246.352.61.2.5381207706442521315.17095139606086369684", TagFromName.SeriesInstanceUID) // Daily QA REG TX6 8 May 2020
+    //putValue("1.2.246.352.61.2.5712771626225617482.7784404980121987989", TagFromName.SeriesInstanceUID) // Daily QA RTIMAGE TX6 8 May 2020
+
+    putValue("$TX1OBI2020Q2", TagFromName.PatientID)
+
+    //put(TagFromName.SOPInstanceUID)
+    put(TagFromName.SeriesInstanceUID)
 
     put(TagFromName.Modality)
     //putValue("RTIMAGE", TagFromName.Modality)
     //put(TagFromName.SeriesDate)
     //    put(TagFromName.SeriesTime)
+    put(TagFromName.SeriesDate)
+    put(TagFromName.SeriesTime)
     put(TagFromName.ContentDate)
     put(TagFromName.ContentTime)
     //put(TagFromName.SeriesInstanceUID)
@@ -204,7 +232,8 @@ object DicomCFind extends IdentifierHandler with Logging {
 
     //for (qrl <- QueryRetrieveLevel.values; qrim <- QueryRetrieveInformationModel.values) {
     //for (qrl <- Seq(QueryRetrieveLevel.IMAGE, QueryRetrieveLevel.SERIES, QueryRetrieveLevel.STUDY); qrim <- Seq(QueryRetrieveInformationModel.StudyRoot, QueryRetrieveInformationModel.PatientRoot)) {
-    for (qrl <- Seq(QueryRetrieveLevel.IMAGE); qrim <- Seq(QueryRetrieveInformationModel.StudyRoot)) {
+    for (qrl <- Seq(QueryRetrieveLevel.SERIES); qrim <- Seq(QueryRetrieveInformationModel.StudyRoot)) {
+      //for (qrl <- Seq(QueryRetrieveLevel.IMAGE); qrim <- Seq(QueryRetrieveInformationModel.StudyRoot)) {
       //for (qrl <- Seq(QueryRetrieveLevel.STUDY); qrim <- Seq(QueryRetrieveInformationModel.PatientRoot)) {
       val resultList = cfind(
         callingAETitle, // callingAETitle
@@ -223,6 +252,9 @@ object DicomCFind extends IdentifierHandler with Logging {
         //      })
 
         println(resultList.map(r => r.toString.replace('\0', ' ')).mkString("\n"))
+
+        println(resultList.map(r => al2Human(r)).mkString("\n"))
+
         println("\nNumber of results: " + resultList.size)
 
         println("-----------------------------------------------------------------------------------------")
