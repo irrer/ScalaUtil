@@ -95,7 +95,7 @@ class DicomReceiver(mainDir: File, myPacs: PACS, receivedObjectHandler: Received
   def cmove(specification: AttributeList, srcPacs: PACS, dstPacs: PACS, affectedSOPClass: String = SOPClass.PatientRootQueryRetrieveInformationModelMove): Option[String] = {
     if (subDirFile.isDefined) {
       subDirFile.get.mkdirs
-      val specAsString = specification.toString.replace('\0', ' ')
+      val specAsString = specification.toString.replace('\u0000', ' ')
 
       // If no QueryRetrieveLevel is specified, then fail badly.
       if (specification.get(TagFromName.QueryRetrieveLevel) == null) {

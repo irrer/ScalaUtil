@@ -59,7 +59,7 @@ object DicomCFind extends IdentifierHandler with Logging {
     private val list = scala.collection.mutable.ArrayBuffer[AttributeList]()
 
     override def doSomethingWithIdentifier(attributeList: AttributeList) = {
-      //logger.trace("Got attributes: " + attributeList.toString().replace('\0', ' '));  // log null chars as blanks
+      //logger.trace("Got attributes: " + attributeList.toString().replace('\u0000', ' '));  // log null chars as blanks
       if (limit.isEmpty || (limit.isDefined && (list.size < limit.get))) {
         list += attributeList
       } else {
@@ -228,7 +228,7 @@ object DicomCFind extends IdentifierHandler with Logging {
 
     //put(TagFromName.Modality)
 
-    println("query:\n--------------------------------\n" + al.toString.replace('\0', ' ') + "--------------------------------")
+    println("query:\n--------------------------------\n" + al.toString.replace('\u0000', ' ') + "--------------------------------")
 
     //for (qrl <- QueryRetrieveLevel.values; qrim <- QueryRetrieveInformationModel.values) {
     //for (qrl <- Seq(QueryRetrieveLevel.IMAGE, QueryRetrieveLevel.SERIES, QueryRetrieveLevel.STUDY); qrim <- Seq(QueryRetrieveInformationModel.StudyRoot, QueryRetrieveInformationModel.PatientRoot)) {
@@ -251,7 +251,7 @@ object DicomCFind extends IdentifierHandler with Logging {
         //        println(m.formatted("%-10s  ") + s)
         //      })
 
-        println(resultList.map(r => r.toString.replace('\0', ' ')).mkString("\n"))
+        println(resultList.map(r => r.toString.replace('\u0000', ' ')).mkString("\n"))
 
         println(resultList.map(r => al2Human(r)).mkString("\n"))
 

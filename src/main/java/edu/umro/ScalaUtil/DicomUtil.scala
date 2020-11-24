@@ -220,7 +220,7 @@ object DicomUtil {
           case attr: SequenceAttribute => toSequenceAttribute(attr)
           case _ => "unknown"
         }
-      }.replace('\n', ' ').replace('\0', ' ').replace('\r', ' ') // remove funky characters
+      }.replace('\n', ' ').replace('\u0000', ' ').replace('\r', ' ') // remove funky characters
 
     val tagName = if (dictionary.getNameFromTag(tag) == null) "<unknown>" else dictionary.getNameFromTag(tag)
 
@@ -410,17 +410,18 @@ object DicomUtil {
 
   def findAllSingle(attributeList: AttributeList, tag: AttributeTag): IndexedSeq[Attribute] = findAll(attributeList, Set(tag))
 
+  private def getTransferSyntax(attributeList: AttributeList): String = {
+    val ts = attributeList.get(TagFromName.TransferSyntaxUID)
+    if ((ts != null) && (ts.getSingleStringValueOrNull != null)) ts.getSingleStringValueOrNull
+    else TransferSyntax.ImplicitVRLittleEndian
+  }
+
   /**
    * Write and attribute list to an output stream, preserving the TransferSyntaxUID if specified.  Flush and
    * close the output stream.  Throw an exception if there is an IO error.
    */
   def writeAttributeList(attributeList: AttributeList, outputStream: OutputStream, sourceApplication: String): Unit = {
-    val transferSyntax: String = {
-      val ts = attributeList.get(TagFromName.TransferSyntaxUID)
-      if ((ts != null) && (ts.getSingleStringValueOrNull != null)) ts.getSingleStringValueOrNull
-      else TransferSyntax.ImplicitVRLittleEndian
-    }
-
+    val transferSyntax = getTransferSyntax(attributeList)
     FileMetaInformation.addFileMetaInformation(attributeList, transferSyntax, sourceApplication)
     attributeList.write(outputStream, transferSyntax, true, true)
     outputStream.flush
@@ -448,12 +449,7 @@ object DicomUtil {
      * Special write of attribute list that does not close the stream.
      */
     def writeAl(attributeList: AttributeList, outputStream: OutputStream): Unit = {
-      val transferSyntax: String = {
-        val ts = attributeList.get(TagFromName.TransferSyntaxUID)
-        if ((ts != null) && (ts.getSingleStringValueOrNull != null)) ts.getSingleStringValueOrNull
-        else TransferSyntax.ImplicitVRLittleEndian
-      }
-
+      val transferSyntax = getTransferSyntax(attributeList)
       val dout = new DicomOutputStream(outputStream, TransferSyntax.ExplicitVRLittleEndian, transferSyntax)
       attributeList.write(dout, true)
     }
@@ -469,6 +465,40 @@ object DicomUtil {
     managed(new ZipOutputStream(byteArrayOutputStream)) acquireAndGet {
       zipOut =>
         alList.map(al => addOneAlToZip(al, zipOut))
+    }
+    byteArrayOutputStream.toByteArray
+  }
+
+  /**
+   * Write a list of named attribute lists to a zipped byte array.
+   *
+   * @param alListWithNames: List of attribute+name pairs
+   *
+   * @param sourceApplication: Source application in DICOM header
+   *
+   */
+  def namedDicomToZippedByteArray(alListWithNames: Seq[(AttributeList, String)], sourceApplication: String): Array[Byte] = {
+
+    /**
+     * Special write of attribute list that does not close the stream.
+     */
+    def writeAl(attributeList: AttributeList, outputStream: OutputStream): Unit = {
+      val transferSyntax = getTransferSyntax(attributeList)
+      FileMetaInformation.addFileMetaInformation(attributeList, transferSyntax, sourceApplication)
+      val dout = new DicomOutputStream(outputStream, TransferSyntax.ExplicitVRLittleEndian, transferSyntax)
+      attributeList.write(dout, true)
+    }
+
+    def addOneAlToZip(al: AttributeList, name: String, zipOut: ZipOutputStream): Unit = {
+      val zipEntry = new ZipEntry(name)
+      zipOut.putNextEntry(zipEntry)
+      writeAl(al, zipOut)
+    }
+
+    val byteArrayOutputStream = new ByteArrayOutputStream
+    managed(new ZipOutputStream(byteArrayOutputStream)) acquireAndGet {
+      zipOut =>
+        alListWithNames.map(alName => addOneAlToZip(alName._1, alName._2, zipOut))
     }
     byteArrayOutputStream.toByteArray
   }
@@ -590,8 +620,8 @@ object DicomUtil {
     //    val copyA = clone(a)
     //    println("compareDicom(a,copyA) should be  0: " + compareDicom(a, copyA))
     //
-    //    val aText = a.toString.replace('\0', ' ')
-    //    val copyAText = copyA.toString.replace('\0', ' ')
+    //    val aText = a.toString.replace('\u0000', ' ')
+    //    val copyAText = copyA.toString.replace('\u0000', ' ')
     //
     //    println("Should be true: " + aText.equals(copyAText))
     //

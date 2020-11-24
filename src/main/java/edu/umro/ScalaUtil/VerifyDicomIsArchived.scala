@@ -125,7 +125,7 @@ object VerifyDicomIsArchived extends Logging {
     def gt(tag: AttributeTag): String = {
       val at = series.get(tag)
       if (at == null) ""
-      else at.getSingleStringValueOrEmptyString.trim.replace('\0', ' ')
+      else at.getSingleStringValueOrEmptyString.trim.replace('\u0000', ' ')
     }
     val slices = getSliceCount(gt(TagFromName.SeriesInstanceUID))
     val dateTime = textToDateTime(gt(TagFromName.SeriesDate), gt(TagFromName.SeriesTime))
@@ -142,7 +142,7 @@ object VerifyDicomIsArchived extends Logging {
     def gt(tag: AttributeTag) = {
       val at = first.get(tag)
       if (at == null) ""
-      else at.getSingleStringValueOrEmptyString.trim.replace('\0', ' ')
+      else at.getSingleStringValueOrEmptyString.trim.replace('\u0000', ' ')
     }
     val dateTime = textToDateTime(gt(TagFromName.StudyDate), gt(TagFromName.StudyTime))
     println(
@@ -155,7 +155,7 @@ object VerifyDicomIsArchived extends Logging {
   private def makePatientReport(PatientID: String, seriesListAll: Seq[AttributeList]): Unit = {
     val seriesList: Seq[AttributeList] = seriesListAll.filter(s => s.get(TagFromName.PatientID).getSingleStringValueOrEmptyString.trim.equalsIgnoreCase(PatientID.trim))
     val PatientName: String = {
-      seriesList.head.get(TagFromName.PatientName).getSingleStringValueOrEmptyString.trim.replace('\0', ' ')
+      seriesList.head.get(TagFromName.PatientName).getSingleStringValueOrEmptyString.trim.replace('\u0000', ' ')
     }
 
     val studyList = seriesList.groupBy(s => s.get(TagFromName.StudyInstanceUID).getSingleStringValueOrEmptyString.trim)
