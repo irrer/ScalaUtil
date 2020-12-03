@@ -17,7 +17,6 @@ import com.pixelmed.dicom.FileMetaInformation
 import com.pixelmed.dicom.OtherByteAttributeOnDisk
 import com.pixelmed.dicom.Attribute
 import java.text.SimpleDateFormat
-import org.scalatest.Fact.IsEqvTo
 import java.util.Calendar
 import java.util.TimeZone
 import com.pixelmed.dicom.AttributeList.ReadTerminationStrategy

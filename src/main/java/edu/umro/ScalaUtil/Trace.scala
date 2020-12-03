@@ -4,7 +4,7 @@ import java.util.Date
 import java.text.SimpleDateFormat
 
 /**
- * For debugging code.  Print source line and optoinally parameters.
+ * For debugging code.  Print source line and optionally, parameters.
  */
 object Trace {
 

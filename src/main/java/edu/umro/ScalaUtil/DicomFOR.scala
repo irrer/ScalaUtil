@@ -6,20 +6,12 @@ import edu.umro.util.UMROGUID
 import com.pixelmed.dicom.AttributeList
 import com.pixelmed.dicom.TagFromName
 import com.pixelmed.dicom.AttributeTag
-import com.pixelmed.dicom.AttributeFactory
-import com.pixelmed.dicom.SOPClass
 import com.pixelmed.dicom.TransferSyntax
 import java.util.Date
-import com.pixelmed.dicom.OtherByteAttribute
-import com.pixelmed.dicom.OtherWordAttribute
-import java.io.FileOutputStream
 import com.pixelmed.dicom.FileMetaInformation
-import com.pixelmed.dicom.OtherByteAttributeOnDisk
 import com.pixelmed.dicom.Attribute
 import java.text.SimpleDateFormat
-//import org.scalatest.Fact.IsEqvTo
 import java.util.Calendar
-import java.util.TimeZone
 import com.pixelmed.dicom.AttributeList.ReadTerminationStrategy
 
 /**

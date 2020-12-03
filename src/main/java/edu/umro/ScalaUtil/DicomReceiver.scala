@@ -16,11 +16,6 @@ import java.util.LinkedList
 import com.pixelmed.network.PresentationContext
 import com.pixelmed.dicom.TransferSyntax
 import com.pixelmed.dicom.SOPClass
-import com.pixelmed.network.CMoveRequestCommandMessage
-import com.pixelmed.network.CompositeResponseHandler
-import java.io.ByteArrayOutputStream
-import com.pixelmed.dicom.DicomOutputStream
-import com.pixelmed.network.AReleaseException
 import edu.umro.util.Utility
 import java.util.Date
 import java.text.SimpleDateFormat
