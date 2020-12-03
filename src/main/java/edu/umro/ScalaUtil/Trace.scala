@@ -4,7 +4,7 @@ import java.util.Date
 import java.text.SimpleDateFormat
 
 /**
- * For debugging code
+ * For debugging code.  Print source line and optoinally parameters.
  */
 object Trace {
 
@@ -16,9 +16,26 @@ object Trace {
   /** If true, do tracing.  If false, do not trace.  Default is true. */
   private var active = true
 
-  def on = { active = true }
-  def off = { active = false }
-  def isOn = active
+  /**
+   * Turn tracing on.
+   */
+  def on: Unit = {
+    active = true
+  }
+
+  /**
+   * Turn tracing off.
+   */
+  def off: Unit = {
+    active = false
+  }
+
+  /**
+   * Determine if tracing is on.
+   *
+   * @return True if tracing is on.
+   */
+  def isOn: Boolean = active
 
   private def current: String = {
     val se = Thread.currentThread.getStackTrace()(3)
@@ -38,13 +55,16 @@ object Trace {
 
   /** Print current line with time elapsed since last trace. */
   def trace: Unit = {
-    println(current)
+    if (active)
+      println(current)
   }
 
   /** Print current line and parameter value with time elapsed since last trace. */
   def trace(v: Any): Unit = {
-    val text = if (v == null) "null" else v.toString.replaceAll("\0", " ")
-    println(current + " : " + text)
+    if (active) {
+      val text = if (v == null) "null" else v.toString.replaceAll("\0", " ")
+      println(current + " : " + text)
+    }
   }
 
   /** For testing only. */

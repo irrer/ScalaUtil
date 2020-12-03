@@ -61,7 +61,7 @@ class TestDicomUtil extends FlatSpec with Matchers {
 
     val sopBefore = alList.map(al => al.get(TagFromName.SOPInstanceUID).getSingleStringValueOrEmptyString).mkString(" ")
     println("Round tripped DICOM size: " + alRound.size)
-    println("Round tripped DICOM:\n" + alRound.head.toString.replace('\0', ' ').take(500))
+    println("Round tripped DICOM:\n" + alRound.head.toString.replace('\u0000', ' ').take(500))
     println("Round tripped DICOM size: " + alRound.size)
     println("SOPInstanceUID list: " + sopBefore)
     val sopAfter = alRound.map(al => al.get(TagFromName.SOPInstanceUID).getSingleStringValueOrEmptyString).mkString(" ")

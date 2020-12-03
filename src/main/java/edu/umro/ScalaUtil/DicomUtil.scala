@@ -27,8 +27,6 @@ import java.text.SimpleDateFormat
 import java.util.zip.ZipOutputStream
 import java.util.zip.ZipEntry
 import resource.managed
-import java.util.zip.ZipInputStream
-import scala.annotation.tailrec
 import com.pixelmed.dicom.FileMetaInformation
 import java.util.Date
 
