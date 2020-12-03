@@ -221,6 +221,7 @@ object DicomUtil {
           case _ => "unknown"
         }
       }.replace('\n', ' ').replace('\u0000', ' ').replace('\r', ' ') // remove funky characters
+      //}.replace('\n', ' ').replace('\u0000', ' ').replace('\r', ' ') // remove funky characters
 
     val tagName = if (dictionary.getNameFromTag(tag) == null) "<unknown>" else dictionary.getNameFromTag(tag)
 
