@@ -1,13 +1,9 @@
 package edu.umro.ScalaUtil
 
-import scala.xml.PrettyPrinter
-import scala.xml.Elem
-import edu.umro.util.UMROGUID
-import java.util.UUID
-import java.util.Date
-import java.text.SimpleDateFormat
-import java.text.ParseException
 import java.io.File
+import java.text.{ParseException, SimpleDateFormat}
+import java.util.{Date, Properties, UUID}
+import scala.xml.{Elem, PrettyPrinter}
 
 /**
  * Common utilities for API.
@@ -98,9 +94,32 @@ object Util {
     }
   }
 
+  /**
+   * Geh the properties from the file in the given path in the jar of the given class.
+   *
+   * @param classy Class that is in the related jar file.
+   *               *
+   * @param path   Path within the jar file where the property file resides.
+   *               *
+   * @return Either a set of properties or, if anything went wrong, nothing.
+   */
+  def getJarPropertyFile(classy: java.lang.Class[_], path: String = "/manifest.properties"): Option[Properties] = {
+    try {
+      val p = new Properties
+      val i = classy.getResourceAsStream(path)
+      p.load(i)
+      Some(p)
+    } catch {
+      case e: Exception => None
+    }
+  }
+
   /** For testing only. */
   def main(args: Array[String]): Unit = {
+    println("Properties: " + getJarPropertyFile(LS.getClass))
+
     println("uuid: " + makeUID)
+
 
     class Foo;
     val foo = new Foo

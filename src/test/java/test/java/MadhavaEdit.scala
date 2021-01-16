@@ -2,10 +2,12 @@ package test.java
 
 import com.pixelmed.dicom.AttributeList
 import com.pixelmed.dicom.Attribute
+
 import java.io.File
 import com.pixelmed.dicom.TagFromName
 import com.pixelmed.dicom.AttributeFactory
 import com.pixelmed.dicom.TransferSyntax
+
 import java.io.FileOutputStream
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -20,6 +22,7 @@ import edu.umro.ScalaUtil.RawByte
 import com.pixelmed.dicom.DicomDictionary
 import edu.umro.util.UMROGUID
 import com.pixelmed.dicom.OtherWordAttribute
+import edu.umro.DicomDict.TagByName
 
 // Special for Madhava and Yue: Thu, Dec 08, 2016  3:39:44 PM
 
@@ -139,8 +142,8 @@ object MadhavaEdit {
         al.get(TagFromName.InstanceNumber).removeValues
         al.get(TagFromName.InstanceNumber).addValue(i + 1)
 
-        al.get(TagFromName.TemporalPositionIdentifier).removeValues
-        al.get(TagFromName.TemporalPositionIdentifier).addValue(i)
+        al.get(TagByName.TemporalPositionIdentifier).removeValues
+        al.get(TagByName.TemporalPositionIdentifier).addValue(i)
 
         al.get(TagFromName.SliceLocation).removeValues
         al.get(TagFromName.SliceLocation).addValue(zLoc)

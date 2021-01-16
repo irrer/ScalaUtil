@@ -7,6 +7,7 @@ import com.pixelmed.dicom.AttributeList
 import com.pixelmed.dicom.TagFromName
 import com.pixelmed.dicom.SOPClass
 import com.pixelmed.dicom.AttributeTag
+import edu.umro.DicomDict.TagByName
 
 /**
  * Given a struct, plan, and optionally dose file, create new versions of them that connect them as a set.
@@ -107,7 +108,7 @@ object DicomLinker extends Logging {
       val foruid = attributeList.get(TagFromName.FrameOfReferenceUID)
       if (foruid != null) foruid.getSingleStringValueOrEmptyString.trim
       else {
-        val seq = DicomUtil.seqToAttr(attributeList, TagFromName.ReferencedFrameOfReferenceSequence)
+        val seq = DicomUtil.seqToAttr(attributeList, TagByName.ReferencedFrameOfReferenceSequence)
         if (seq == null) {
           fail("No frame of reference for " + file.getAbsolutePath)
           ""
@@ -143,11 +144,11 @@ object DicomLinker extends Logging {
   }
 
   private def refStruct(dicomFile: DicomFile, struct: DicomFile): Unit = {
-    referTo(dicomFile, TagFromName.ReferencedStructureSetSequence, struct.SOPInstanceUID)
+    referTo(dicomFile, TagByName.ReferencedStructureSetSequence, struct.SOPInstanceUID)
   }
 
   private def refPlan(dicomFile: DicomFile, plan: DicomFile): Unit = {
-    referTo(dicomFile, TagFromName.ReferencedRTPlanSequence, plan.SOPInstanceUID)
+    referTo(dicomFile, TagByName.ReferencedRTPlanSequence, plan.SOPInstanceUID)
   }
 
   private def linkDicomFiles(dicomList: Seq[DicomFile], outputDir: File): Unit = {

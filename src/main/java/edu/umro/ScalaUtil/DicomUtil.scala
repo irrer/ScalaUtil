@@ -109,7 +109,6 @@ object DicomUtil {
    * 0xfe).
    *
    * @param i
-   *
    * @return
    */
   private def byteToHuman(i: Int): String = {
@@ -126,8 +125,7 @@ object DicomUtil {
    * Convert a single non-sequence attribute to a human readable text format.
    *
    * @param attribute
-   *            Attribute to format.
-   *
+   * Attribute to format.
    * @return String version of attribute.
    */
   def attributeToString(attribute: Attribute, indentLevel: String): String = {
@@ -153,7 +151,9 @@ object DicomUtil {
     def toTextualVR: String = {
       val classSop: String = {
         val value = attribute.getSingleStringValueOrNull
-        if ((value != null) && (ValueRepresentation.isUniqueIdentifierVR(vr)) && (SOPClassDescriptions.getDescriptionFromUID(value).length() > 0)) { " (" + SOPClassDescriptions.getDescriptionFromUID(value) + ")" } else ""
+        if ((value != null) && (ValueRepresentation.isUniqueIdentifierVR(vr)) && (SOPClassDescriptions.getDescriptionFromUID(value).length() > 0)) {
+          " (" + SOPClassDescriptions.getDescriptionFromUID(value) + ")"
+        } else ""
       }
       val text = foldStringList(
         (if (attribute.getStringValues == null) List("<null>")
@@ -219,7 +219,7 @@ object DicomUtil {
           case _ => "unknown"
         }
       }.replace('\n', ' ').replace('\u0000', ' ').replace('\r', ' ') // remove funky characters
-      //}.replace('\n', ' ').replace('\u0000', ' ').replace('\r', ' ') // remove funky characters
+    //}.replace('\n', ' ').replace('\u0000', ' ').replace('\r', ' ') // remove funky characters
 
     val tagName = if (dictionary.getNameFromTag(tag) == null) "<unknown>" else dictionary.getNameFromTag(tag)
 
@@ -240,10 +240,15 @@ object DicomUtil {
   /**
    * Represent the components of a person name (Value Representation PN) in DICOM format.
    *
-   *  Smith^John^Q --> John Q Smith
+   * Smith^John^Q --> John Q Smith
    */
   case class DicomPersonName(familyNameComplex: Option[String], givenNameComplex: Option[String], middleName: Option[String], namePrefix: Option[String], nameSuffix: Option[String]) {
-    def partToStr(part: Option[String]): String = if (part.isDefined) { part.get + " " } else ""
+    def partToStr(part: Option[String]): String =
+      if (part.isDefined) {
+        part.get + " "
+      } else
+        ""
+
     override def toString: String = (partToStr(namePrefix) + partToStr(givenNameComplex) + partToStr(middleName) + partToStr(familyNameComplex) + partToStr(nameSuffix)).replaceAll("  *", " ").trim
   }
 
@@ -252,6 +257,7 @@ object DicomUtil {
    */
   def parseDicomPersonName(text: String): DicomPersonName = {
     val pn = text.split("\\^")
+
     def getPn(i: Int): Option[String] = if (pn.size > i) Some(pn(i)) else None
 
     new DicomPersonName(getPn(0), getPn(1), getPn(2), getPn(3), getPn(4))
@@ -348,9 +354,7 @@ object DicomUtil {
   /**
    * Make a new copy of an attribute list, not sharing any data with the original.
    *
-   * @param source
-   *            List to copy.
-   *
+   * @param source * List to copy.
    * @return Copy of list.
    *
    */
@@ -471,9 +475,8 @@ object DicomUtil {
   /**
    * Write a list of named attribute lists to a zipped byte array.
    *
-   * @param alListWithNames: List of attribute+name pairs
-   *
-   * @param sourceApplication: Source application in DICOM header
+   * @param alListWithNames   : List of attribute+name pairs
+   * @param sourceApplication : Source application in DICOM header
    *
    */
   def namedDicomToZippedByteArray(alListWithNames: Seq[(AttributeList, String)], sourceApplication: String): Array[Byte] = {
@@ -506,11 +509,10 @@ object DicomUtil {
    * Given a byte array, attempt to convert it to an <code>AttributeList</code>.
    *
    * @param data Bytes representing a single DICOM object.
-   *
    * @return DICOM, or None if the content doesn't not represent a single DICOM object.
    */
   def byteArrayToDicom(data: Array[Byte]): Option[AttributeList] = {
-    import scala.util.{ Try, Success, Failure }
+    import scala.util.{Try, Success, Failure}
 
     val result = {
       Try {
@@ -539,11 +541,9 @@ object DicomUtil {
   /**
    * Remove members of the sequence that match according to the given function.
    *
-   * @param al: Contains the main SequenceAttribute
-   *
-   * @param seqAttrTag: Tag of main SequenceAttribute
-   *
-   * @param identifyForRemoval: Returns true for each attribute list that should be removed.
+   * @param al                 : Contains the main SequenceAttribute
+   * @param seqAttrTag         : Tag of main SequenceAttribute
+   * @param identifyForRemoval : Returns true for each attribute list that should be removed.
    */
   def removeSeq(al: AttributeList, seqAttrTag: AttributeTag, identifyForRemoval: (AttributeList) => Boolean): Seq[AttributeList] = {
     val listPair = DicomUtil.seqToAttr(al, seqAttrTag).partition(identifyForRemoval)

@@ -197,7 +197,7 @@ object ConstructMhd {
       make(TagFromName.ReferringPhysicianName, "none")
       make(TagFromName.PatientSex, "O")
       make(TagFromName.SliceThickness, mhd.ElementSpacing(2).toString)
-      makeDbl(TagFromName.KVP, 120)
+      makeDbl(DicomUtil.dictionary.getTagFromName("KVP"), 120)
       makeDbl(TagFromName.SpacingBetweenSlices, mhd.ElementSpacing(2).toDouble)
       make(TagFromName.DeviceSerialNumber, "001")
       make(TagFromName.SoftwareVersions, "irrer 0.0.2")

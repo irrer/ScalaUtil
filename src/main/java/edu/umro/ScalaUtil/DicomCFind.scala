@@ -1,14 +1,13 @@
 package edu.umro.ScalaUtil
 
-import com.pixelmed.network.IdentifierHandler
+import com.pixelmed.dicom.AttributeFactory
 import com.pixelmed.dicom.AttributeList
-import com.pixelmed.network.FindSOPClassSCU
+import com.pixelmed.dicom.AttributeTag
 import com.pixelmed.dicom.SOPClass
 import com.pixelmed.dicom.TagFromName
-import com.pixelmed.dicom.AttributeTag
-import com.pixelmed.dicom.AttributeFactory
 import com.pixelmed.network.Association
-import com.pixelmed.network.AReleaseException
+import com.pixelmed.network.FindSOPClassSCU
+import com.pixelmed.network.IdentifierHandler
 
 /**
  * Support for C-FIND.
@@ -208,7 +207,7 @@ object DicomCFind extends IdentifierHandler with Logging {
     //putValue("1.2.246.352.61.2.5381207706442521315.17095139606086369684", TagFromName.SeriesInstanceUID) // Daily QA REG TX6 8 May 2020
     //putValue("1.2.246.352.61.2.5712771626225617482.7784404980121987989", TagFromName.SeriesInstanceUID) // Daily QA RTIMAGE TX6 8 May 2020
 
-    putValue("$TX1OBI2020Q2", TagFromName.PatientID)
+    putValue("$TB3_OBI2020Q2", TagFromName.PatientID)
 
     //put(TagFromName.SOPInstanceUID)
     put(TagFromName.SeriesInstanceUID)
@@ -218,6 +217,9 @@ object DicomCFind extends IdentifierHandler with Logging {
     //put(TagFromName.SeriesDate)
     //    put(TagFromName.SeriesTime)
     put(TagFromName.SeriesDate)
+    put(TagFromName.SeriesTime)
+    put(TagFromName.AcquisitionDate)
+    put(TagFromName.AcquisitionTime)
     put(TagFromName.SeriesTime)
     put(TagFromName.ContentDate)
     put(TagFromName.ContentTime)

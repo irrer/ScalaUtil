@@ -9,15 +9,18 @@ import com.pixelmed.dicom.AttributeTag
 import com.pixelmed.dicom.AttributeFactory
 import com.pixelmed.dicom.SOPClass
 import com.pixelmed.dicom.TransferSyntax
+
 import java.util.Date
 import com.pixelmed.dicom.OtherByteAttribute
 import com.pixelmed.dicom.OtherWordAttribute
+
 import java.io.FileOutputStream
 import com.pixelmed.dicom.FileMetaInformation
 import edu.umro.ScalaUtil.DicomUtil
 import edu.umro.ScalaUtil.Trace
 import com.pixelmed.dicom.OtherByteAttributeOnDisk
 import com.pixelmed.dicom.Attribute
+import edu.umro.DicomDict.TagByName
 import edu.umro.ScalaUtil.FileUtil
 
 object ForKar {
@@ -61,10 +64,10 @@ object ForKar {
   }
 
   private def fixRtstruct(rtstruct: AttributeList, imageSeriesUid: String, uidList: Seq[String]) = {
-    val refFrmOfRef = DicomUtil.seqToAttr(rtstruct, TagFromName.ReferencedFrameOfReferenceSequence).head
-    val studySeq = DicomUtil.seqToAttr(refFrmOfRef, TagFromName.RTReferencedStudySequence).head
-    val seriesSeq = DicomUtil.seqToAttr(studySeq, TagFromName.RTReferencedSeriesSequence).head
-    val contourSeq = DicomUtil.seqToAttr(seriesSeq, TagFromName.ContourImageSequence)
+    val refFrmOfRef = DicomUtil.seqToAttr(rtstruct, TagByName.ReferencedFrameOfReferenceSequence).head
+    val studySeq = DicomUtil.seqToAttr(refFrmOfRef, TagByName.RTReferencedStudySequence).head
+    val seriesSeq = DicomUtil.seqToAttr(studySeq, TagByName.RTReferencedSeriesSequence).head
+    val contourSeq = DicomUtil.seqToAttr(seriesSeq, TagByName.ContourImageSequence)
 
     val refSeries = seriesSeq.get(TagFromName.SeriesInstanceUID)
     refSeries.removeValues

@@ -10,19 +10,25 @@ import com.pixelmed.dicom.AttributeTag
 import com.pixelmed.dicom.AttributeFactory
 import com.pixelmed.dicom.SOPClass
 import com.pixelmed.dicom.TransferSyntax
+
 import java.util.Date
 import com.pixelmed.dicom.OtherByteAttribute
 import com.pixelmed.dicom.OtherWordAttribute
+
 import java.io.FileOutputStream
 import com.pixelmed.dicom.FileMetaInformation
 import com.pixelmed.dicom.DicomDictionary
 import com.pixelmed.dicom.Attribute
+
 import scala.util.Random
 import com.pixelmed.dicom.IntegerStringAttribute
 import org.slf4j.impl.StaticLoggerBinder
+
 import scala.collection.mutable.ArrayBuffer
 import com.pixelmed.dicom.OtherByteAttributeOnDisk
 import com.pixelmed.display.ConsumerFormatImageMaker
+import edu.umro.DicomDict.TagByName
+
 import javax.imageio.ImageIO
 import edu.umro.util.OpSys
 
@@ -158,12 +164,12 @@ Note that this means that you must be able to write to this folder.
     ImageType.addValue("REFIMAGE")
     al.put(ImageType)
 
-    al.remove(TagFromName.StartTrim)
-    al.remove(TagFromName.StopTrim)
-    al.remove(TagFromName.RecommendedDisplayFrameRate)
-    al.remove(TagFromName.CineRate)
+    al.remove(TagByName.StartTrim)
+    al.remove(TagByName.StopTrim)
+    al.remove(TagByName.RecommendedDisplayFrameRate)
+    al.remove(TagByName.CineRate)
     al.remove(TagFromName.FrameTime)
-    al.remove(TagFromName.PositionerMotion)
+    al.remove(TagByName.PositionerMotion)
     al.remove(new AttributeTag(0x0021, 0x1028))
     al.remove(new AttributeTag(0x0025, 0x1010))
     al.remove(TagFromName.NumberOfFrames)

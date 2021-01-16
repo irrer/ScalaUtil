@@ -7,12 +7,15 @@ import com.pixelmed.dicom.AttributeList
 import com.pixelmed.dicom.TagFromName
 import com.pixelmed.dicom.AttributeTag
 import com.pixelmed.dicom.TransferSyntax
+
 import java.util.Date
 import com.pixelmed.dicom.FileMetaInformation
 import com.pixelmed.dicom.Attribute
+
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import com.pixelmed.dicom.AttributeList.ReadTerminationStrategy
+import edu.umro.DicomDict.TagByName
 
 object Julia extends Logging {
 
@@ -112,8 +115,8 @@ object Julia extends Logging {
   }
 
   private def refPlanOf(al: AttributeList): String = {
-    if (al.get(TagFromName.ReferencedRTPlanSequence) != null) {
-      val refSeq = DicomUtil.seqToAttr(al, TagFromName.ReferencedRTPlanSequence).head.get(TagFromName.ReferencedSOPInstanceUID).getSingleStringValueOrEmptyString
+    if (al.get(TagByName.ReferencedRTPlanSequence) != null) {
+      val refSeq = DicomUtil.seqToAttr(al, TagByName.ReferencedRTPlanSequence).head.get(TagFromName.ReferencedSOPInstanceUID).getSingleStringValueOrEmptyString
       refSeq
     } else ""
   }
@@ -123,7 +126,7 @@ object Julia extends Logging {
       (TagFromName.ContentDate, TagFromName.ContentTime),
       (TagFromName.SeriesDate, TagFromName.SeriesTime),
       (TagFromName.AcquisitionDate, TagFromName.AcquisitionTime),
-      (TagFromName.CreationDate, TagFromName.CreationTime),
+      (TagByName.CreationDate, TagByName.CreationTime),
       (TagFromName.StudyDate, TagFromName.StudyTime),
       (TagFromName.InstanceCreationDate, TagFromName.InstanceCreationTime))
 
@@ -153,8 +156,8 @@ object Julia extends Logging {
     TagFromName.AcquisitionTime,
     TagFromName.ContentDate,
     TagFromName.ContentTime,
-    TagFromName.CreationDate,
-    TagFromName.CreationTime,
+    TagByName.CreationDate,
+    TagByName.CreationTime,
     TagFromName.ImagePositionPatient,
     TagFromName.SliceLocation,
     TagFromName.InstanceCreationDate,
@@ -202,7 +205,7 @@ object Julia extends Logging {
       val partial = readPartial(f)
       val isRtstruct = partial.get(TagFromName.Modality).getSingleStringValueOrEmptyString.equals("RTSTRUCT")
       if (isRtstruct)
-        readPartial(f, tagToLong(TagFromName.StructureSetROISequence))
+        readPartial(f, tagToLong(TagByName.StructureSetROISequence))
       else
         partial
     }
@@ -266,10 +269,10 @@ object Julia extends Logging {
     if (imageSeriesList.isEmpty) noCt("NoImageSeries")
     else {
       val rtstruct = readFile(rtstructDF.file)
-      val refFrmOfRef = DicomUtil.seqToAttr(rtstruct, TagFromName.ReferencedFrameOfReferenceSequence).head
-      val studySeq = DicomUtil.seqToAttr(refFrmOfRef, TagFromName.RTReferencedStudySequence).head
-      val seriesSeq = DicomUtil.seqToAttr(studySeq, TagFromName.RTReferencedSeriesSequence).head
-      val contourSeq = DicomUtil.seqToAttr(seriesSeq, TagFromName.ContourImageSequence)
+      val refFrmOfRef = DicomUtil.seqToAttr(rtstruct, TagByName.ReferencedFrameOfReferenceSequence).head
+      val studySeq = DicomUtil.seqToAttr(refFrmOfRef, TagByName.RTReferencedStudySequence).head
+      val seriesSeq = DicomUtil.seqToAttr(studySeq, TagByName.RTReferencedSeriesSequence).head
+      val contourSeq = DicomUtil.seqToAttr(seriesSeq, TagByName.ContourImageSequence)
 
       val ctSeriesOpt = imageSeriesList.find(s => s.size == contourSeq.size)
       if (ctSeriesOpt.isEmpty) noCt("WrongSizeImageSeries")

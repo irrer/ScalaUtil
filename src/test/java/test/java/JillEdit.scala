@@ -2,19 +2,20 @@ package test.java
 
 import com.pixelmed.dicom.AttributeList
 import com.pixelmed.dicom.Attribute
+
 import java.io.File
 import com.pixelmed.dicom.TagFromName
 import com.pixelmed.dicom.AttributeTag
 import com.pixelmed.dicom.AttributeFactory
 import edu.umro.util.UMROGUID
 import com.pixelmed.dicom.TransferSyntax
+
 import java.io.FileOutputStream
 import edu.umro.ScalaUtil.FileUtil
 import com.pixelmed.dicom.SequenceAttribute
 import com.pixelmed.dicom.SOPClass
+import edu.umro.DicomDict.TagByName
 import edu.umro.ScalaUtil.DicomUtil
-
-// Special for Kristy: Mon Nov 16 14:11:21 EST 2015
 
 object JillEdit {
 
@@ -32,7 +33,7 @@ object JillEdit {
     val al = new AttributeList
     al.put(makeAttr(TagFromName.ReferencedSOPClassUID, SOPClass.RTPlanStorage))
     al.put(makeAttr(TagFromName.ReferencedSOPInstanceUID, "1.2.246.352.71.5.116071937349.789597.20201124150130"))
-    val seqAt = AttributeFactory.newAttribute(TagFromName.ReferencedRTPlanSequence).asInstanceOf[SequenceAttribute]
+    val seqAt = AttributeFactory.newAttribute(TagByName.ReferencedRTPlanSequence).asInstanceOf[SequenceAttribute]
     seqAt.addItem(al)
     seqAt
   }

@@ -5,6 +5,8 @@ import edu.umro.util.Utility
 import edu.umro.util.UMROGUID
 import com.pixelmed.dicom.AttributeList
 import com.pixelmed.dicom.TagFromName
+import edu.umro.DicomDict.TagByName
+import edu.umro.ScalaUtil.Logging
 import com.pixelmed.dicom.AttributeTag
 import com.pixelmed.dicom.TransferSyntax
 import java.util.Date
@@ -141,8 +143,8 @@ object DicomFOR extends Logging {
   }
 
   private def refPlanOf(al: AttributeList): String = {
-    if (al.get(TagFromName.ReferencedRTPlanSequence) != null) {
-      val refSeq = DicomUtil.seqToAttr(al, TagFromName.ReferencedRTPlanSequence).head.get(TagFromName.ReferencedSOPInstanceUID).getSingleStringValueOrEmptyString
+    if (al.get(DicomUtil.dictionary.getTagFromName("ReferencedRTPlanSequence")) != null) {
+      val refSeq = DicomUtil.seqToAttr(al, TagByName.ReferencedRTPlanSequence).head.get(TagFromName.ReferencedSOPInstanceUID).getSingleStringValueOrEmptyString
       refSeq
     } else ""
   }
@@ -152,7 +154,7 @@ object DicomFOR extends Logging {
       (TagFromName.ContentDate, TagFromName.ContentTime),
       (TagFromName.SeriesDate, TagFromName.SeriesTime),
       (TagFromName.AcquisitionDate, TagFromName.AcquisitionTime),
-      (TagFromName.CreationDate, TagFromName.CreationTime),
+      (TagByName.CreationDate, TagByName.CreationTime),
       (TagFromName.StudyDate, TagFromName.StudyTime),
       (TagFromName.InstanceCreationDate, TagFromName.InstanceCreationTime))
 
@@ -182,8 +184,8 @@ object DicomFOR extends Logging {
     TagFromName.AcquisitionTime,
     TagFromName.ContentDate,
     TagFromName.ContentTime,
-    TagFromName.CreationDate,
-    TagFromName.CreationTime,
+    TagByName.CreationDate,
+    TagByName.CreationTime,
     TagFromName.ImagePositionPatient,
     TagFromName.SliceLocation,
     TagFromName.InstanceCreationDate,
@@ -231,7 +233,7 @@ object DicomFOR extends Logging {
       val partial = readPartial(f)
       val isRtstruct = partial.get(TagFromName.Modality).getSingleStringValueOrEmptyString.equals("RTSTRUCT")
       if (isRtstruct)
-        readPartial(f, tagToLong(TagFromName.StructureSetROISequence))
+        readPartial(f, tagToLong(TagByName.StructureSetROISequence))
       else
         partial
     }
