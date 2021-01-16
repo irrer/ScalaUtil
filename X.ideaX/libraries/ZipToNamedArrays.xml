@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <library name="ZipToNamedArrays">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/src/test/resources/ZipToNamedArrays/DICOM_1_1557230491003.4..zip!/" />
+      <root url="jar://$PROJECT_DIR$/src/test/resources/ZipToNamedArrays/DICOM_1_.1552409651073.67.zip!/" />
+      <root url="jar://$PROJECT_DIR$/src/test/resources/ZipToNamedArrays/nested.zip!/" />
+      <root url="jar://$PROJECT_DIR$/src/test/resources/ZipToNamedArrays/DICOM_1_.1560289857768.25.zip!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
