@@ -3,12 +3,13 @@ package test.java
 import edu.umro.ScalaUtil.{FileUtil, Trace}
 
 import java.io.File
+import scala.annotation.tailrec
 
 object PrintPdfCopy {
 
-  private val inDir = new File("""\\uhrofilespr1\PrintPDFData""")
-  private val outDir = new File("""\\txd\f$\TxDLite\Print_Files""")
-  private val newOutDir = new File("""\\txd\f$\TxDLite\Print_Files""")
+  private val inDir     = new File("""\\uhrofilespr1\PrintPDFData""")
+  private val outDir    = new File("""\\txd\f$\TxDLite\UDA_Print_Files""")
+  private val newOutDir = new File("""\\txd\f$\TxDLite\UDA_Print_Files""")
 
 
   private val reallyDoIt = true
@@ -23,8 +24,8 @@ object PrintPdfCopy {
   /**
    * Return true if there is a file in the directory with the given content.
    *
-   * @param content
-   * @param dir
+   * @param content content
+   * @param dir dir
    * @return
    */
   private def contentAlreadyExists(content: Array[Byte], dir: File): Boolean = {
@@ -39,7 +40,7 @@ object PrintPdfCopy {
 
     val exists = fileList.exists(f => contentIsSame(f))
     if (!exists)
-      println("hey")
+      println("Creating new file.")
     exists
   }
 
@@ -61,6 +62,7 @@ object PrintPdfCopy {
         val baseName = inPdfFile.getName.replaceAll("....$", "")
         println("Avoiding file name collision ...")
 
+        @tailrec
         def writeFile(i: Int): Unit = {
           val f = new File(dest, baseName + i + ".PDF")
           if (f.exists())
@@ -79,7 +81,7 @@ object PrintPdfCopy {
     println("working on PDF file: " + inPdfFile.getParentFile.getParentFile.getName + "/" + inPdfFile.getParentFile.getName + "/" + inPdfFile.getName)
 
     // figure out if the TxD directory exists
-    val nickname = inPdfFile.getName.split("_").filter(_.length > 0).headOption
+    val nickname = inPdfFile.getName.split("_").find(_.nonEmpty)
     if (nickname.isDefined) {
       val outD = new File(outDir, nickname.get)
       if (outD.exists())
