@@ -58,13 +58,20 @@ case class Study(StudyInstanceUID: String) {
    * @param parentDir Put files under this directory.
    */
   def move(parentDir: File, parentDateTimeFormat: SimpleDateFormat): Unit = {
-    if (seriesList.size > 1) {
-      def dirNameOf(series: Series): String = {
-        parentDateTimeFormat.format(series.dateOf()) + "_" + series.Modality
-      }
+    def dirNameOf(series: Series): String = {
+      parentDateTimeFormat.format(series.dateOf()) + "_" + series.Modality
     }
-    else
+
+    val dateFormat = TreeUtil.dateTimeFormat(seriesList.values.map(s => s.dateOf()))
+    seriesList.values.foreach(s => s.move(parentDir, dateFormat))
+
+    /*
+    if (seriesList.size > 1) {
+    }
+    else {
       seriesList.values.head.move(parentDir, parentDateTimeFormat)
+    }
+      */
   }
 
 }

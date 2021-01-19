@@ -28,28 +28,22 @@ case class Patient(PatientID: String) {
    */
   def move(parentDir: File): Unit = {
     val prefix = "Study_"
-    if (studyList.size > 1) {
-      val dateFormat = TreeUtil.dateTimeFormat(studyList.values.toIndexedSeq.map(s => s.dateOf))
+    val dateFormat = TreeUtil.dateTimeFormat(studyList.values.toIndexedSeq.map(s => s.dateOf))
 
-      def dirNameOf(study: Study): String = {
-        prefix + dateFormat.format(study.dateOf) + {
-          if (study.getDescription.isDefined) "_" + study.getDescription.take(DicomTree.maxStudyDescriptionSize)
-          else ""
-        }
+    def dirNameOf(study: Study): String = {
+      prefix + dateFormat.format(study.dateOf) + {
+        if (study.getDescription.isDefined) "_" + TreeUtil.formatDescription(study.getDescription.get, DicomTree.maxStudyDescriptionSize)
+        else ""
       }
-
-      def dirOf(study: Study) = {
-        val studyDir = new File(parentDir, dirNameOf(study))
-        studyDir.mkdirs()
-        studyDir
-      }
-
-      studyList.values.toIndexedSeq.foreach(study => study.move(dirOf(study)))
     }
-    else {
-      // If there is only one study, then do not create the extra directory level for studies.
-      studyList.values.head.move(parentDir)
+
+    def dirOf(study: Study) = {
+      val studyDir = new File(parentDir, dirNameOf(study))
+      studyDir.mkdirs()
+      studyDir
     }
+
+    studyList.values.toIndexedSeq.foreach(study => study.move(dirOf(study), dateFormat))
   }
 }
 

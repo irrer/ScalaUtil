@@ -1,6 +1,5 @@
 package edu.umro.ScalaUtil.DicomTree
 
-import com.pixelmed.dicom.AttributeList
 import com.pixelmed.dicom.TagFromName
 import edu.umro.ScalaUtil.FileUtil
 
@@ -23,24 +22,6 @@ object DicomTree {
   /** Maximum number of characters for series descriptions. */
   val maxSeriesDescriptionSize = 30
 
-  /**
-   * Read a DICOM file.  If it contains DICOM, then return the corresponding attribute list.
-   *
-   * @param dicomFile Try to read this as a DICOM file.
-   * @return An attribute list or  nothing on failure.
-   */
-  private def readFile(dicomFile: File): Option[AttributeList] = {
-    try {
-      val al = new AttributeList
-      al.read(dicomFile)
-      print(".") // show read progress to user
-      Some(al)
-    } catch {
-      case _: Throwable =>
-        println("Unable to read file as DICOM.  Ignoring: " + dicomFile.getAbsolutePath)
-        None
-    }
-  }
 
   /**
    * Add the references of the given file to the data structures.
@@ -48,13 +29,18 @@ object DicomTree {
    * @param file Read this file.
    */
   private def addFile(file: File): Unit = {
-    readFile(file) match {
-      case Some(al) =>
-        print(".")
-        val PatientID = TreeUtil.getAttr(al, TagFromName.PatientID)
-        if (!PatientMap.contains(PatientID)) PatientMap.put(PatientID, Patient(PatientID))
-        PatientMap.get(PatientID).add(file, al)
-      case _ =>
+    try {
+      TreeUtil.readFile(file) match {
+        case Some(al) =>
+          print(".")
+          val PatientID = TreeUtil.getAttr(al, TagFromName.PatientID)
+          if (!PatientMap.contains(PatientID)) PatientMap.put(PatientID, Patient(PatientID))
+          PatientMap.get(PatientID).add(file, al)
+        case _ =>
+      }
+    }
+    catch {
+      case t: Throwable => println("Can not read file " + file.getAbsolutePath + " as DICOM.  File ignored.")
     }
   }
 
@@ -64,11 +50,25 @@ object DicomTree {
    *
    * @param file File in input tree.
    */
-  private def findFilesInTree(file: File): Unit = {
+  private def addFilesInTree(file: File): Unit = {
     if (file.isDirectory)
-      file.listFiles.foreach(f => findFilesInTree(f))
+      TreeUtil.listFilesSafely(file).foreach(f => addFilesInTree(f))
     else
       addFile(file)
+  }
+
+
+  /**
+   * Crawl the file tree, deleting any empty directories.
+   *
+   * @param file File in input tree.
+   */
+  private def deleteFilesInTree(file: File): Unit = {
+    if (file.isDirectory) {
+      TreeUtil.listFilesSafely(file).foreach(f => deleteFilesInTree(f))
+      if (TreeUtil.listFilesSafely(file).isEmpty)
+        file.delete
+    }
   }
 
 
@@ -81,7 +81,7 @@ object DicomTree {
     try {
       val start = System.currentTimeMillis
       if ((args.length < 1) || (args.length > 2)) {
-        println("Usage: treeify inputdir outputdir\nNo files moved.")
+        println("Usage: DicomTree inputDir outputDir\nNo files moved.")
         System.exit(1)
       }
       val inDir = new File(args(0))
@@ -97,12 +97,15 @@ object DicomTree {
         }
       }
 
-      findFilesInTree(inDir)
+      addFilesInTree(inDir)
 
       if (PatientMap.size < 2)
         PatientMap.values.foreach(patient => patient.move(outDir))
       else
         PatientMap.values.foreach(patient => patient.move(new File(outDir, FileUtil.replaceInvalidFileNameCharacters(patient.PatientID, replacement = '_'))))
+
+      println("\nDeleting empty directories...")
+      deleteFilesInTree(inDir)
 
       println("\nDone.  Elapsed ms: " + (System.currentTimeMillis - start))
     }

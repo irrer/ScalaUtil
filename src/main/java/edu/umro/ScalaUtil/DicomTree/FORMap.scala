@@ -31,6 +31,8 @@ object FORMap {
       forList(forUID)
     }
 
+    val j = list.map(forUID => addToList(forUID))
+    val j1 = al.get(TagFromName.Modality).getSingleStringValueOrEmptyString
     list.map(forUID => addToList(forUID))
   }
 

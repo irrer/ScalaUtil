@@ -1,7 +1,9 @@
 package edu.umro.ScalaUtil.DicomTree
 
 import com.pixelmed.dicom.AttributeList
+import com.pixelmed.dicom.AttributeTag
 import com.pixelmed.dicom.TagFromName
+import edu.umro.DicomDict.TagByName
 
 import java.io.File
 import java.text.SimpleDateFormat
@@ -25,12 +27,25 @@ private case class Series(SeriesInstanceUID: String, Modality: String) {
    * @param al Look here for description.
    */
   private def setDescription(al: AttributeList): Unit = {
+
     if (seriesDescription.isEmpty) {
-      val at = al.get(TagFromName.SeriesDescription)
-      if (at != null) {
-        val text = at.getSingleStringValueOrNull
-        if ((text != null) && text.trim.nonEmpty) seriesDescription = Some(text)
+      val tagList = Seq(
+        TagFromName.SeriesDescription,
+        TagByName.RTImageDescription,
+        TagByName.RTPlanLabel,
+        TagByName.RTPlanName)
+
+      def get(tag: AttributeTag) = {
+        val attr = al.get(tag)
+        if (attr == null) None
+        else {
+          val text = attr.getSingleStringValueOrNull
+          if ((text != null) && text.trim.nonEmpty) Some(text)
+          else None
+        }
       }
+
+      seriesDescription = tagList.flatMap(tag => get(tag)).headOption
     }
   }
 
@@ -42,6 +57,7 @@ private case class Series(SeriesInstanceUID: String, Modality: String) {
    * @param al         Attribute list reflecting contents of file.
    */
   def add(sourceFile: File, al: AttributeList): Unit = {
+    setDescription(al)
     val SOPInstanceUID = TreeUtil.getAttr(al, TagFromName.SOPInstanceUID)
     if (dicomFileList.contains(SOPInstanceUID)) {
       println("\nFile with duplicate SOPInstanceUID ignored: " + sourceFile.getAbsolutePath + "  Previous file: " + dicomFileList(SOPInstanceUID).sourceFile.getAbsolutePath)
@@ -55,7 +71,10 @@ private case class Series(SeriesInstanceUID: String, Modality: String) {
    *
    * @return Earliest date.
    */
-  def dateOf(): Date = dicomFileList.values.minBy(df => df.date.getTime).date
+  def dateOf(): Date = {
+    val date = dicomFileList.values.minBy(df => df.date.getTime).date
+    date
+  }
 
 
   /**
@@ -73,13 +92,18 @@ private case class Series(SeriesInstanceUID: String, Modality: String) {
       // There is only one file in this series, so do not create an extra directory
       // level.  Just put the DICOM file directly in the parent dir.
 
-      val fileName =
-        parentDateFormat.format(dateOf()) + "_" +
-          Modality + "_" +
-          TreeUtil.forToString(forList()) +
-          DicomTree.dicomFileSuffix
-      val file = new File(parentDir, fileName)
-      dicomFileList.values.head.sourceFile.renameTo(file)
+      val fileName = {
+        val base =
+          parentDateFormat.format(dateOf()) + "_" +
+            Modality + "_" +
+            TreeUtil.forToString(forList()) + dicomFileList.values.head.getSpecialName
+
+        val trimmed = base.replaceAll("___*", "_").replaceAll("^_", "").replaceAll("_$", "")
+
+        trimmed + DicomTree.dicomFileSuffix
+      }
+      val newFile = new File(parentDir, fileName)
+      TreeUtil.renameFile(dicomFileList.values.head.sourceFile, newFile)
     }
 
     else {
@@ -92,13 +116,19 @@ private case class Series(SeriesInstanceUID: String, Modality: String) {
         else ""
       }
 
-      val seriesDir = new File(parentDir, parentDateFormat.format(dateOf()) + "_" + Modality + dicomFileList.size + desc)
+      val forText: String = {
+        val forList = dicomFileList.values.flatMap(df => df.forInInst).toIndexedSeq.distinct.sorted
+        TreeUtil.forToString(forList)
+      }
+
+
+      val seriesDir = new File(parentDir, parentDateFormat.format(dateOf()) + "_" + Modality + dicomFileList.size + forText + desc)
       seriesDir.mkdirs()
 
       def moveFile(df: DicomFile, index: Int): Unit = {
-        val fileName = Modality + "_" + (index + 1).formatted(indexFormat) + DicomTree.dicomFileSuffix
-        val file = new File(seriesDir, fileName)
-        df.sourceFile.renameTo(file)
+        val fileName = Modality + "_" + (index + 1).formatted(indexFormat) + df.getSpecialName + DicomTree.dicomFileSuffix
+        val newFile = new File(seriesDir, fileName)
+        TreeUtil.renameFile(df.sourceFile, newFile)
       }
 
       val sortedList = dicomFileList.values.toIndexedSeq.sortBy(df => df.sortingText + TreeUtil.standardDateFormat.format(df.date))
