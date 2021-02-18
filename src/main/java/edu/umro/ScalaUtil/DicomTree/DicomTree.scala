@@ -40,7 +40,7 @@ object DicomTree {
       }
     }
     catch {
-      case t: Throwable => println("Can not read file " + file.getAbsolutePath + " as DICOM.  File ignored.")
+      case _: Throwable => println("Can not read file " + file.getAbsolutePath + " as DICOM.  File ignored.")
     }
   }
 

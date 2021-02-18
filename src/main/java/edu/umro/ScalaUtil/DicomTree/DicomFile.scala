@@ -42,8 +42,11 @@ object DicomFile {
 
     val instanceNumber = al.get(TagFromName.InstanceNumber)
     val instanceText =
-      if (instanceNumber == null) ""
-      else instanceNumber.getIntegerValues.map(i => i.formatted("%010d")).mkString(" ")
+      if ((instanceNumber == null) || (instanceNumber.getIntegerValues == null) || instanceNumber.getIntegerValues.isEmpty)
+        ""
+      else {
+        instanceNumber.getIntegerValues.map(i => i.formatted("%010d")).mkString(" ")
+      }
 
     positionText + instanceText
   }
@@ -55,7 +58,9 @@ object DicomFile {
         try {
           val GantryAngle = al.get(TagByName.GantryAngle).getDoubleValues.head
           val BeamLimitingDeviceAngle = al.get(TagByName.BeamLimitingDeviceAngle).getDoubleValues.head
+
           def angleRounded(angleInDegrees: Double): Long = (angleInDegrees + 720).round % 360
+
           Some("G" + angleRounded(GantryAngle) + "C" + angleRounded(BeamLimitingDeviceAngle))
         }
         catch {
