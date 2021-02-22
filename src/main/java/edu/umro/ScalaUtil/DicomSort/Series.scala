@@ -1,4 +1,4 @@
-package edu.umro.ScalaUtil.DicomTree
+package edu.umro.ScalaUtil.DicomSort
 
 import com.pixelmed.dicom.AttributeList
 import com.pixelmed.dicom.AttributeTag
@@ -100,7 +100,7 @@ private case class Series(SeriesInstanceUID: String, Modality: String) {
 
         val trimmed = base.replaceAll("___*", "_").replaceAll("^_", "").replaceAll("_$", "")
 
-        trimmed + DicomTree.dicomFileSuffix
+        trimmed + DicomSort.dicomFileSuffix
       }
       val newFile = new File(parentDir, fileName)
       TreeUtil.renameFile(dicomFileList.values.head.sourceFile, newFile)
@@ -112,7 +112,7 @@ private case class Series(SeriesInstanceUID: String, Modality: String) {
       val indexFormat = "%0" + dicomFileList.size.toString.length + "d"
 
       val desc: String = {
-        if (seriesDescription.isDefined) "_" + TreeUtil.formatDescription(seriesDescription.get, DicomTree.maxSeriesDescriptionSize)
+        if (seriesDescription.isDefined) "_" + TreeUtil.formatDescription(seriesDescription.get, DicomSort.maxSeriesDescriptionSize)
         else ""
       }
 
@@ -126,7 +126,7 @@ private case class Series(SeriesInstanceUID: String, Modality: String) {
       seriesDir.mkdirs()
 
       def moveFile(df: DicomFile, index: Int): Unit = {
-        val fileName = Modality + "_" + (index + 1).formatted(indexFormat) + df.getSpecialName + DicomTree.dicomFileSuffix
+        val fileName = Modality + "_" + (index + 1).formatted(indexFormat) + df.getSpecialName + DicomSort.dicomFileSuffix
         val newFile = new File(seriesDir, fileName)
         TreeUtil.renameFile(df.sourceFile, newFile)
       }

@@ -1,11 +1,11 @@
-package edu.umro.ScalaUtil.DicomTree
+package edu.umro.ScalaUtil.DicomSort
 
 import com.pixelmed.dicom.TagFromName
 import edu.umro.ScalaUtil.FileUtil
 
 import java.io.File
 
-object DicomTree {
+object DicomSort {
 
   /** When creating a single DICOM file, use this as a suffix. */
   val dicomFileSuffix = ".dcm"

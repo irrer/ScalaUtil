@@ -1,4 +1,4 @@
-package edu.umro.ScalaUtil.DicomTree
+package edu.umro.ScalaUtil.DicomSort
 
 import com.pixelmed.dicom.AttributeList
 import com.pixelmed.dicom.TagFromName

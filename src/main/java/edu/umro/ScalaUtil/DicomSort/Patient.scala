@@ -1,4 +1,4 @@
-package edu.umro.ScalaUtil.DicomTree
+package edu.umro.ScalaUtil.DicomSort
 
 import com.pixelmed.dicom.AttributeList
 import com.pixelmed.dicom.TagFromName
@@ -32,7 +32,7 @@ case class Patient(PatientID: String) {
 
     def dirNameOf(study: Study): String = {
       prefix + dateFormat.format(study.dateOf) + {
-        if (study.getDescription.isDefined) "_" + TreeUtil.formatDescription(study.getDescription.get, DicomTree.maxStudyDescriptionSize)
+        if (study.getDescription.isDefined) "_" + TreeUtil.formatDescription(study.getDescription.get, DicomSort.maxStudyDescriptionSize)
         else ""
       }
     }
