@@ -171,12 +171,10 @@ object DicomUtil {
     }
 
     def limitedCopy[A](raw: Array[A], max: Int): List[A] = {
-      if (raw.size > max) {
-        val cooked = ArrayBuffer[A]()
-        (0 until max).map(i => cooked :+ raw(i))
-        cooked.toList
-      } else
-        raw.toList
+      if (raw == null)
+        List[A]()
+      else
+        raw.take(max).toList
     }
 
     def toOtherByte(attr: OtherByteAttribute): String = {
@@ -606,8 +604,20 @@ object DicomUtil {
    */
   def main(args: Array[String]): Unit = {
 
-    val a = new AttributeList
-    a.read("""D:\pf\eclipse\workspaceOxygen\ScalaUtil\src\test\resources\vessel_a.dcm""")
+    val fileList = Seq(
+      """D:\tmp\aqa\tmp\LOC\RTPLAN_2021-03-02T11-03-08-174_LOC_MACH_50\LOC-Baseline.dcm""",
+      """D:\tmp\aqa\tmp\LOC\RTPLAN_2021-03-02T11-03-08-174_LOC_MACH_50\LOC-Delivery.dcm""",
+      """D:\tmp\aqa\tmp\LOC\RTPLAN_2021-03-02T14-13-23-017_LOC_LA5\LOC-Baseline.dcm""",
+      """D:\tmp\aqa\tmp\LOC\RTPLAN_2021-03-02T14-13-23-017_LOC_LA5\LOC-Delivery.dcm"""
+    )
+
+    fileList.foreach(f => {
+      val a = new AttributeList
+      val file = new File(f)
+      a.read(file)
+      val s = DicomUtil.attributeListToString(a)
+      println("\n\n\n\nfile: " + file.getAbsolutePath + "\n" + s)
+    })
     //    a.read("""D:\pf\eclipse\workspaceOxygen\ScalaUtil\src\test\resources\vessel_a.dcm""")
     //    val b = new AttributeList
     //    b.read("""D:\pf\eclipse\workspaceOxygen\ScalaUtil\src\test\resources\vessel_b.dcm""")

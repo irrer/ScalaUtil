@@ -88,11 +88,14 @@ Note that this means that you must be able to write to this folder.
   private def readFile(file: File): Option[AttributeList] = {
     try {
       val al = new AttributeList
+      // al.setDecompressPixelData(true)
       log("reading file: " + file.getAbsolutePath)
       al.read(file)
       Some(al)
     } catch {
-      case t: Throwable => None
+      case t: Throwable =>
+        println(fmtEx(t))
+        None
     }
   }
 
@@ -242,9 +245,9 @@ Note that this means that you must be able to write to this folder.
       log("created image: " + pngFile.getAbsolutePath)
     } catch {
       case t: Throwable => {
-        log("Unexpected error in makeImage: " + t.getMessage)
-        log(fmtEx(t))
-        failure(t)
+        log("Unexpected error in making image: " + t.getMessage)
+        // log(fmtEx(t))
+        // failure(t)
       }
     }
   }
