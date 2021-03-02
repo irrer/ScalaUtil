@@ -1,34 +1,34 @@
 package edu.umro.ScalaUtil
 
-import com.pixelmed.dicom.AttributeList
-import com.pixelmed.dicom.SequenceAttribute
-import com.pixelmed.dicom.AttributeTagAttribute
 import com.pixelmed.dicom.Attribute
-import com.pixelmed.dicom.DicomDictionary
-import java.util.HashSet
-import com.pixelmed.dicom.ValueRepresentation
-import com.pixelmed.dicom.SOPClassDescriptions
-import com.pixelmed.dicom.OtherWordAttribute
-import com.pixelmed.dicom.OtherFloatAttribute
-import com.pixelmed.dicom.OtherByteAttribute
-import scala.collection.mutable.ArrayBuffer
+import com.pixelmed.dicom.AttributeList
 import com.pixelmed.dicom.AttributeTag
-import com.pixelmed.dicom.TagFromName
-import com.pixelmed.dicom.SOPClass
-import java.io.ByteArrayOutputStream
-import com.pixelmed.dicom.DicomOutputStream
-import com.pixelmed.dicom.TransferSyntax
-import java.io.ByteArrayInputStream
+import com.pixelmed.dicom.AttributeTagAttribute
+import com.pixelmed.dicom.DicomDictionary
 import com.pixelmed.dicom.DicomInputStream
-import java.io.OutputStream
+import com.pixelmed.dicom.DicomOutputStream
+import com.pixelmed.dicom.FileMetaInformation
+import com.pixelmed.dicom.OtherByteAttribute
+import com.pixelmed.dicom.OtherFloatAttribute
+import com.pixelmed.dicom.OtherWordAttribute
+import com.pixelmed.dicom.SOPClass
+import com.pixelmed.dicom.SOPClassDescriptions
+import com.pixelmed.dicom.SequenceAttribute
+import com.pixelmed.dicom.TagFromName
+import com.pixelmed.dicom.TransferSyntax
+import com.pixelmed.dicom.ValueRepresentation
+import resource.managed
+
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
+import java.io.OutputStream
 import java.text.SimpleDateFormat
-import java.util.zip.ZipOutputStream
-import java.util.zip.ZipEntry
-import resource.managed
-import com.pixelmed.dicom.FileMetaInformation
+import java.util
 import java.util.Date
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 object DicomUtil {
 
@@ -41,8 +41,10 @@ object DicomUtil {
   val dicomDateFormat = new SimpleDateFormat("yyyyMMdd")
 
   /** DICOM compatible time format. */
+  //noinspection SpellCheckingInspection
   val dicomTimeFormat = new SimpleDateFormat("HHmmss.SSS")
 
+  //noinspection SpellCheckingInspection
   val dicomTimeFormatSimple = new SimpleDateFormat("HHmmss")
 
   /**
@@ -54,17 +56,18 @@ object DicomUtil {
     try {
       val upper = dicomTimeFormatSimple.parse(parts(0))
       val ms: Long = if (parts.size > 1) {
-        val uS = ((parts(1) + "000000")).take(6).toDouble
-        (uS / 1000).round.toLong
+        val uS = (parts(1) + "000000").take(6).toDouble
+        (uS / 1000).round
       } else 0
 
       Some(upper.getTime + ms)
     } catch {
-      case t: Throwable => None
+      case _: Throwable => None
     }
   }
 
   /** Used for converting a DICOM date+time pair into a <code>Date</code> */
+  //noinspection SpellCheckingInspection
   private val dicomDateTimeFormat = new SimpleDateFormat("yyyyMMddHHmmss.SSS")
 
   /**
@@ -82,7 +85,7 @@ object DicomUtil {
       }
       Some(dicomDateTimeFormat.parse(dateText + timeText))
     } catch {
-      case e: Throwable => None
+      case _: Throwable => None
     }
   }
 
@@ -96,30 +99,18 @@ object DicomUtil {
     ValueRepresentation.IS, ValueRepresentation.LO, ValueRepresentation.LT, ValueRepresentation.PN,
     ValueRepresentation.SH, ValueRepresentation.SL, ValueRepresentation.SS, ValueRepresentation.ST,
     ValueRepresentation.TM, ValueRepresentation.UI, ValueRepresentation.UL, ValueRepresentation.US,
-    ValueRepresentation.UT, ValueRepresentation.XS, ValueRepresentation.XO);
+    ValueRepresentation.UT, ValueRepresentation.XS, ValueRepresentation.XO)
 
   /** A quickly searchable list of value representations. */
-  private val vrSet = new HashSet[String]
+  private val vrSet = new util.HashSet[String]
 
   TEXTUAL_VR.map(vr => vrSet.add(new String(vr)))
 
-  /**
-   * Show a byte value as humanly readable as possible. If it is a displayable
-   * ASCII character, then show that, otherwise show the hex value (as in
-   * 0xfe).
-   *
-   * @param i
-   * @return
-   */
-  private def byteToHuman(i: Int): String = {
-    val b = i & 255;
-    if ((b >= 32) && (b <= 126)) b.asInstanceOf[Char].toString else b.formatted("0x%x")
-  }
 
   /**
    * Format an attribute tag as a string.
    */
-  def formatAttrTag(tag: AttributeTag) = tag.getGroup.formatted("%04x") + "," + tag.getElement.formatted("%04x")
+  def formatAttrTag(tag: AttributeTag): String = tag.getGroup.formatted("%04x") + "," + tag.getElement.formatted("%04x")
 
   /**
    * Convert a single non-sequence attribute to a human readable text format.
@@ -129,17 +120,16 @@ object DicomUtil {
    * @return String version of attribute.
    */
   def attributeToString(attribute: Attribute, indentLevel: String): String = {
-    val tag = attribute.getTag();
-    val line = new StringBuffer();
+    val tag = attribute.getTag
     val vrDict = dictionary.getValueRepresentationFromTag(tag)
-    val vr = if (vrDict == null) attribute.getVR() else vrDict
+    val vr = if (vrDict == null) attribute.getVR else vrDict
     val VALUE_SEPARATOR = " \\ "
     val MAX_LINE_LENGTH = 500
 
     def foldStringList(list: List[String], valueSeparator: String): String = list.foldLeft("")((t, v) =>
-      t.size match {
+      t.length match {
         case 0 => v
-        case size if (size > MAX_LINE_LENGTH) => t
+        case size if size > MAX_LINE_LENGTH => t
         case _ => t + valueSeparator + v
       })
 
@@ -151,14 +141,14 @@ object DicomUtil {
     def toTextualVR: String = {
       val classSop: String = {
         val value = attribute.getSingleStringValueOrNull
-        if ((value != null) && (ValueRepresentation.isUniqueIdentifierVR(vr)) && (SOPClassDescriptions.getDescriptionFromUID(value).length() > 0)) {
+        if ((value != null) && ValueRepresentation.isUniqueIdentifierVR(vr) && SOPClassDescriptions.getDescriptionFromUID(value).nonEmpty) {
           " (" + SOPClassDescriptions.getDescriptionFromUID(value) + ")"
         } else ""
       }
       val text = foldStringList(
-        (if (attribute.getStringValues == null) List("<null>")
-        else attribute.getStringValues.toList), VALUE_SEPARATOR)
-      (text + classSop)
+        if (attribute.getStringValues == null) List("<null>")
+        else attribute.getStringValues.toList, VALUE_SEPARATOR)
+      text + classSop
     }
 
     def toAttributeTagVR(attr: AttributeTagAttribute): String = {
@@ -200,7 +190,7 @@ object DicomUtil {
           "\n" + attributeListToString(attr.getItem(i).getAttributeList, indentLevel + indentText)
       })
       val text = textList.foldLeft("")((t, a) => t + a)
-      if (text.endsWith("\n")) text.subSequence(0, text.size - 1).toString else text
+      if (text.endsWith("\n")) text.subSequence(0, text.length - 1).toString else text
     }
 
     val valueText: String =
@@ -227,8 +217,7 @@ object DicomUtil {
   private def attributeListToString(attributeList: AttributeList, indent: String): String = {
     attributeList.keySet.toArray.toList.map(tag => {
       val t = tag
-      val obj = tag.asInstanceOf[Object]
-      val a = attributeList.get(t).asInstanceOf[Attribute]
+      val a = attributeList.get(t)
       attributeToString(a, indent)
     }).foldLeft("")((t, a) => t + a + "\n")
   }
@@ -258,7 +247,7 @@ object DicomUtil {
 
     def getPn(i: Int): Option[String] = if (pn.size > i) Some(pn(i)) else None
 
-    new DicomPersonName(getPn(0), getPn(1), getPn(2), getPn(3), getPn(4))
+    DicomPersonName(getPn(0), getPn(1), getPn(2), getPn(3), getPn(4))
   }
 
   /**
@@ -301,8 +290,8 @@ object DicomUtil {
           case (null, null) => 0
           case (null, _) => -1
           case (_, null) => 1
-          case (aVal, _) if (aVal.size <= index) => -1
-          case (_, bVal) if (bVal.size <= index) => 1
+          case (aVal, _) if aVal.size <= index => -1
+          case (_, bVal) if bVal.size <= index => 1
           case (aVal, bVal) => aVal(index).compareTo(bVal(index))
         }
       }
@@ -314,7 +303,7 @@ object DicomUtil {
 
     }
 
-    lazy val seq: Seq[(Any) => Int] = Seq(
+    lazy val seq: Seq[Any => Int] = Seq(
       compareDouble(TagFromName.SliceLocation, 0),
       compareDouble(TagFromName.ImagePositionPatient, 0),
       compareDouble(TagFromName.ImagePositionPatient, 1),
@@ -359,7 +348,6 @@ object DicomUtil {
   def clone(source: AttributeList): AttributeList = {
     val dest = new AttributeList
 
-    val transferSyntaxAttr = source.get(TagFromName.TransferSyntaxUID)
     val transferSyntax = {
       val ts = source.get(TagFromName.TransferSyntaxUID)
       if ((ts != null) && ts.getStringValues.nonEmpty)
@@ -368,8 +356,8 @@ object DicomUtil {
         TransferSyntax.ExplicitVRLittleEndian; // DEFAULT_TRANSFER_SYNTAX;
     }
     val byteArrayOutputStream = new ByteArrayOutputStream
-    val dicomOutputStream = new DicomOutputStream(byteArrayOutputStream, transferSyntax, transferSyntax);
-    source.write(dicomOutputStream);
+    val dicomOutputStream = new DicomOutputStream(byteArrayOutputStream, transferSyntax, transferSyntax)
+    source.write(dicomOutputStream)
 
     val byteArrayInputStream = new ByteArrayInputStream(byteArrayOutputStream.toByteArray)
     dest.read(new DicomInputStream(byteArrayInputStream))
@@ -381,7 +369,7 @@ object DicomUtil {
    * Get the attribute lists of a sequence attribute.
    */
   def seqToAttr(al: AttributeList, tag: AttributeTag): Seq[AttributeList] = {
-    val seq = (al.get(tag)).asInstanceOf[SequenceAttribute]
+    val seq = al.get(tag).asInstanceOf[SequenceAttribute]
     (0 until seq.getNumberOfItems).map(i => seq.getItem(i).getAttributeList)
   }
 
@@ -399,13 +387,13 @@ object DicomUtil {
 
     def childSeq(al: AttributeList): IndexedSeq[AttributeList] = {
       val seqList = al.values.toArray.filter(at => at.isInstanceOf[SequenceAttribute]).map(at => at.asInstanceOf[SequenceAttribute])
-      val alListList = seqList.map(seq => (0 until seq.getNumberOfItems).map(i => seq.getItem(i).getAttributeList)).flatten
+      val alListList = seqList.flatMap(seq => (0 until seq.getNumberOfItems).map(i => seq.getItem(i).getAttributeList))
       alListList.toIndexedSeq
     }
 
     val atList = attributeList.values.toArray.toList.toIndexedSeq.map(at => at.asInstanceOf[Attribute])
     val listOfInterest = atList.filter(at => tagSet.contains(at.getTag))
-    val all = listOfInterest ++ childSeq(attributeList).map(child => findAll(child, tagSet)).flatten
+    val all = listOfInterest ++ childSeq(attributeList).flatMap(child => findAll(child, tagSet))
     all
   }
 
@@ -425,8 +413,8 @@ object DicomUtil {
     val transferSyntax = getTransferSyntax(attributeList)
     FileMetaInformation.addFileMetaInformation(attributeList, transferSyntax, sourceApplication)
     attributeList.write(outputStream, transferSyntax, true, true)
-    outputStream.flush
-    outputStream.close
+    outputStream.flush()
+    outputStream.close()
   }
 
   /**
@@ -510,7 +498,8 @@ object DicomUtil {
    * @return DICOM, or None if the content doesn't not represent a single DICOM object.
    */
   def byteArrayToDicom(data: Array[Byte]): Option[AttributeList] = {
-    import scala.util.{Try, Success, Failure}
+    import scala.util.Success
+    import scala.util.Try
 
     val result = {
       Try {
@@ -543,7 +532,7 @@ object DicomUtil {
    * @param seqAttrTag         : Tag of main SequenceAttribute
    * @param identifyForRemoval : Returns true for each attribute list that should be removed.
    */
-  def removeSeq(al: AttributeList, seqAttrTag: AttributeTag, identifyForRemoval: (AttributeList) => Boolean): Seq[AttributeList] = {
+  def removeSeq(al: AttributeList, seqAttrTag: AttributeTag, identifyForRemoval: AttributeList => Boolean): Seq[AttributeList] = {
     val listPair = DicomUtil.seqToAttr(al, seqAttrTag).partition(identifyForRemoval)
     val remove = listPair._1
     val keep = listPair._2
@@ -579,8 +568,7 @@ object DicomUtil {
           map(a => a.getSingleStringValueOrEmptyString.toUpperCase.trim).
           distinct.
           filterNot(tmt => tmt.equals("")).
-          filterNot(tmt => tmt.equals(mainMMN)).
-          toSeq
+          filterNot(tmt => tmt.equals(mainMMN))
 
       val tmt = ManufacturerModelNameList match {
         case _ if ManufacturerModelNameList.isEmpty => None
@@ -617,6 +605,7 @@ object DicomUtil {
       a.read(file)
       val s = DicomUtil.attributeListToString(a)
       println("\n\n\n\nfile: " + file.getAbsolutePath + "\n" + s)
+      println("done")
     })
     //    a.read("""D:\pf\eclipse\workspaceOxygen\ScalaUtil\src\test\resources\vessel_a.dcm""")
     //    val b = new AttributeList
