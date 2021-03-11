@@ -501,19 +501,23 @@ object DicomUtil {
     import scala.util.Success
     import scala.util.Try
 
-    val result = {
-      Try {
-        val al = new AttributeList
-        val dis = new DicomInputStream(new ByteArrayInputStream(data))
-        al.read(dis)
-        al
-      } match {
-        // Note that the check for dicom.size > 1 should not be necessary, but I think somehow Try is messing up the result
-        case Success(dicom) if dicom.size > 1 => Some(dicom)
-        case _ => None
+    if (IsDicom.isDicomOrAcrNema(data)) {
+      val result = {
+        Try {
+          val al = new AttributeList
+          val dis = new DicomInputStream(new ByteArrayInputStream(data))
+          al.read(dis)
+          al
+        } match {
+          // Note that the check for dicom.size > 1 should not be necessary, but I think somehow Try is messing up the result
+          case Success(dicom) if dicom.size > 1 => Some(dicom)
+          case _ => None
+        }
       }
+      result
     }
-    result
+    else
+      None
   }
 
   /**
