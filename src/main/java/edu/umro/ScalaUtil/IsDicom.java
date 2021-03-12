@@ -55,7 +55,7 @@ public class IsDicom {
      */
     public static boolean isDicomOrAcrNema(InputStream inputStream) {
         boolean success = false;
-        // FileInputStream fi = null;
+        java.io.FileInputStream fi = null;
         try {
             InputStream in = new BufferedInputStream(inputStream);
             byte[] b = new byte[160];
