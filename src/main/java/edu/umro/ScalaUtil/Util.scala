@@ -1,9 +1,14 @@
 package edu.umro.ScalaUtil
 
 import java.io.File
-import java.text.{ParseException, SimpleDateFormat}
-import java.util.{Date, Properties, UUID}
-import scala.xml.{Elem, PrettyPrinter}
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Properties
+import java.util.UUID
+import scala.annotation.tailrec
+import scala.xml.Elem
+import scala.xml.PrettyPrinter
 
 /**
  * Common utilities for API.
@@ -17,7 +22,7 @@ object Util {
   /**
    * System independent line separator.
    */
-  val LS = System.getProperty("line.separator")
+  val LS: String = System.getProperty("line.separator")
 
   def xmlToText(document: Elem): String = new PrettyPrinter(1024, 2).format(document)
 
@@ -25,13 +30,13 @@ object Util {
    * Format a <code>Throwable</code>.
    *
    * @param throwable Contains description and stack trace.
-   *
    * @return Human readable version of <code>Throwable</code> and stack trace.
    */
   def fmtEx(throwable: Throwable): String = {
-    throwable.getStackTrace.toList.foldLeft("")((text, stkElem) => "\n    " + stkElem)
+    throwable.getStackTrace.toList.foldLeft("")((_, stkElem) => "\n    " + stkElem)
   }
 
+  //noinspection SpellCheckingInspection
   private val standardDateFormatList = List(
     new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX"),
     new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX"),
@@ -39,25 +44,26 @@ object Util {
     new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss"),
     new SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss"))
 
-  def dateToText(date: Date): String = standardDateFormatList(0).format(date)
+  def dateToText(date: Date): String = standardDateFormatList.head.format(date)
 
-  def standardFormat(date: Date) = dateToText(date)
+  def standardFormat(date: Date): String = dateToText(date)
 
   def textToDate(text: String): Date = {
     val maxTextLength = 23
-    val t = if (text.size > 23) text.substring(0, 23) else text
+    val t = if (text.length > maxTextLength) text.substring(0, maxTextLength) else text
+
     def parse(dateFormat: SimpleDateFormat): Either[String, Date] = {
       try {
         Right(dateFormat.parse(t))
       } catch {
-        case e: ParseException => Left("Attempted to use date format " + dateFormat.toPattern + " but failed with " + e.getMessage())
+        case e: ParseException => Left("Attempted to use date format " + dateFormat.toPattern + " but failed with " + e.getMessage)
       }
     }
 
     val dateList = standardDateFormatList.map(fmt => parse(fmt))
     val validList = dateList.filter(d => d.isRight)
     if (validList.isEmpty) throw new ParseException("Unable to parse '" + text + "' as a date string", 0)
-    val x = validList(0).right.get
+    val x = validList.head.right.get
     x
   }
 
@@ -68,15 +74,47 @@ object Util {
    */
   def roundToDate(date: Date): Date = justDate.parse(justDate.format(date))
 
+  private val elapsedFormatHours = new SimpleDateFormat("HH:mm:ss")
+  private val elapsedFormatMinutes = new SimpleDateFormat("m:ss.SSS")
+  private val elapsedFormatSeconds = new SimpleDateFormat("s.SSS")
+
+  /**
+   * Format time interval into a user friendly format.  Show more or less precision depending on
+   * the size of <code>time</code>.
+   *
+   * @param interval Interval in ms.
+   * @return Formatted as text.
+   */
+  def intervalTimeUserFriendly(interval: Long): String = {
+    val intervalMs = interval.abs
+    val fmt =
+      if (intervalMs >= (60 * 60 * 1000))
+        elapsedFormatHours
+      else if (intervalMs >= (60 * 1000))
+        elapsedFormatMinutes
+      else
+        elapsedFormatSeconds
+    val text = fmt.format(new Date(intervalMs))
+    // add negative symbol if interval is less than zero
+    if (intervalMs < 0)
+      "-" + text
+    else
+      text
+  }
+
+
   /**
    * Given a list, group them into smaller groups of a given size.  The last group in the list may be smaller than the others.
    */
   def sizedGroups[T](seq: Seq[T], groupSize: Int): Seq[Seq[T]] = {
     val gs = Math.max(groupSize, 1)
-    def addGroup[T](seq: Seq[T], grp: Seq[Seq[T]]): Seq[Seq[T]] = {
+
+    @tailrec
+    def addGroup[TT](seq: Seq[TT], grp: Seq[Seq[TT]]): Seq[Seq[TT]] = {
       if (seq.isEmpty) grp
       else addGroup(seq.drop(gs), grp :+ seq.take(gs))
     }
+
     addGroup(seq, Seq[Seq[T]]())
   }
 
@@ -90,7 +128,7 @@ object Util {
       val file = new File(url.getFile)
       Some(file)
     } catch {
-      case t: Throwable => None
+      case _: Throwable => None
     }
   }
 
@@ -110,7 +148,7 @@ object Util {
       p.load(i)
       Some(p)
     } catch {
-      case e: Exception => None
+      case _: Exception => None
     }
   }
 
@@ -121,11 +159,13 @@ object Util {
     println("uuid: " + makeUID)
 
 
-    class Foo;
+    class Foo {}
     val foo = new Foo
 
     getJarFile(foo)
-    val s = { <hey>hey</hey> }
+    val s = {
+      <hey>hey</hey>
+    }
     getJarFile(s)
   }
 
