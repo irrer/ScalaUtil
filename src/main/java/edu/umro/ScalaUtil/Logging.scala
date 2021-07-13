@@ -1,5 +1,7 @@
 package edu.umro.ScalaUtil
 
+import org.slf4j.Logger
+
 /**
  * Log messages.  Extend this trait and use the <code>logger</code> value to log messages.
  *
@@ -34,7 +36,7 @@ package edu.umro.ScalaUtil
  * </pre>
  */
 trait Logging {
-  protected val logger = org.slf4j.LoggerFactory.getLogger("")
+  protected val logger: Logger = org.slf4j.LoggerFactory.getLogger(this.getClass)
 
   /**
    * Format a <code>Throwable</code>.
