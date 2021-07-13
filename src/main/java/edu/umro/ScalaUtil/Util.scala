@@ -36,6 +36,36 @@ object Util {
     throwable.getStackTrace.toList.foldLeft("")((_, stkElem) => "\n    " + stkElem)
   }
 
+  // To be used as a lock for date formatting and parsing.
+  private val dateSync = ""
+
+
+  /**
+   * Format a date in a thread safe way.  Note that the entire application has to use this or threads could
+   * interfere with each other.  This is just a thread-safe wrapper for the standard function.
+   *
+   * @param format Specifies format.
+   * @param date   The date to format.
+   * @return Date formatted as string.
+   */
+  def formatDate(format: SimpleDateFormat, date: Date): String = dateSync.synchronized {
+    format.format(date)
+  }
+
+  /**
+   * Parse a date in a thread safe way.  Note that the entire application has to use this or threads could
+   * interfere with each other.  This is just a thread-safe wrapper for the standard function.
+   *
+   * @param format Specifies format.
+   * @param text   The formatted date to format.
+   * @return Date formatted as string.
+   */
+  @throws[ParseException]
+  def parseDate(format: SimpleDateFormat, text: String): Date = dateSync.synchronized {
+    format.parse(text)
+  }
+
+
   //noinspection SpellCheckingInspection
   private val standardDateFormatList = List(
     new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX"),
