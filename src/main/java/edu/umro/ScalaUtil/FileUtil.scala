@@ -17,8 +17,6 @@
 package edu.umro.ScalaUtil
 
 import java.io.File
-import java.sql.Blob
-import javax.sql.rowset.serial.SerialBlob
 import java.util.zip.ZipOutputStream
 import java.util.zip.ZipEntry
 import java.io.ByteArrayOutputStream
@@ -31,7 +29,6 @@ import scala.annotation.tailrec
 import edu.umro.util.Utility
 import java.io.FileOutputStream
 import java.io.FileInputStream
-import java.io.FileWriter
 
 object FileUtil {
 
