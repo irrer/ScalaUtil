@@ -309,7 +309,7 @@ object FileUtil {
    * Global lock for synchronizing all file writes so that only one write is being done at
    *  a time (as opposed to being done in parallel).
    */
-  private val fileSystemWriteSync = "sync"
+  private val fileSystemWriteSync = "syncFileUtilWritesToDisk"
 
   def writeBinaryFile(file: File, data: Array[Byte]): Unit = fileSystemWriteSync.synchronized({
     file.delete
