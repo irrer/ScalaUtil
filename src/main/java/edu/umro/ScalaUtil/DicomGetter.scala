@@ -365,7 +365,7 @@ object DicomGetter extends Logging {
       dicomReceiver.setSubDir(subDir)
       println("Putting files into " + dicomReceiver.getSubDir.getAbsolutePath)
       val start = System.currentTimeMillis
-      val success = dicomReceiver.cmove(id, thatPacs, thisPacs, SOPClass.PatientRootQueryRetrieveInformationModelMove)
+      val success = dicomReceiver.cmove(id, thatPacs, thisPacs) // , SOPClass.PatientRootQueryRetrieveInformationModelMove)
       val elapsed = System.currentTimeMillis - start
       val status = if (success.isDefined) "Failed: " + success.get else "Success"
       println("elapsed ms: " + elapsed + "    Status: " + status)

@@ -16,40 +16,29 @@
 
 package edu.umro.ScalaUtil
 
-import java.io.File
-import com.pixelmed.dicom.AttributeList
-import com.pixelmed.dicom.Attribute
-import com.pixelmed.dicom.TagFromName
-import com.pixelmed.network.ReceivedObjectHandler
-import com.pixelmed.dicom.DicomDictionary
-import com.pixelmed.dicom.StoredFilePathStrategy
-import com.pixelmed.dicom.StoredFilePathStrategySingleFolder
-import com.pixelmed.network.StorageSOPClassSCPDispatcher
-import com.pixelmed.network.Association
-import com.pixelmed.network.AssociationFactory
-import com.pixelmed.network.Association
-import java.util.LinkedList
-import com.pixelmed.network.PresentationContext
-import com.pixelmed.dicom.TransferSyntax
-import com.pixelmed.dicom.SOPClass
-import edu.umro.util.Utility
-import java.util.Date
-import java.text.SimpleDateFormat
-import com.pixelmed.dicom.AttributeTag
 import com.pixelmed.dicom.AttributeFactory
+import com.pixelmed.dicom.AttributeList
+import com.pixelmed.dicom.AttributeTag
+import com.pixelmed.dicom.SOPClass
 import com.pixelmed.dicom.StoredFilePathStrategy
+import com.pixelmed.dicom.TagFromName
+import com.pixelmed.dicom.TransferSyntax
 import com.pixelmed.network.MoveSOPClassSCU
-import com.pixelmed.network.DicomNetworkException
-import java.util.HashSet
+import com.pixelmed.network.PresentationContext
+import com.pixelmed.network.ReceivedObjectHandler
+import com.pixelmed.network.StorageSOPClassSCPDispatcher
+import edu.umro.util.Utility
+
+import java.io.File
 
 /**
- * Support for copying files from Varian to the local file system.
- */
+  * Support for copying files from Varian to the local file system.
+  */
 class DicomReceiver(mainDir: File, myPacs: PACS, receivedObjectHandler: ReceivedObjectHandler) extends Logging {
 
   def this(mainDir: File, myPacs: PACS) = this(mainDir, myPacs, new DicomReceiver.DefaultReceivedObjectHandler)
 
-  lazy val mainDirName = mainDir.getAbsolutePath
+  lazy val mainDirName: String = mainDir.getAbsolutePath
 
   /** Name of sub-directory to put incoming DICOM files in. */
   private var subDirFile: Option[File] = None
@@ -59,7 +48,7 @@ class DicomReceiver(mainDir: File, myPacs: PACS, receivedObjectHandler: Received
   def setSubDir(subDir: File): File = {
     val sub = subDir.getAbsolutePath
     val main = mainDir.getAbsolutePath
-    if (sub.startsWith(main) && (sub.size > main.size))
+    if (sub.startsWith(main) && (sub.length > main.length))
       this.subDirFile = Some(subDir)
     else
       throw new RuntimeException("Must specify a proper sub-directory of the main directory " + main + "     specified: " + sub)
@@ -73,7 +62,7 @@ class DicomReceiver(mainDir: File, myPacs: PACS, receivedObjectHandler: Received
   private class StoredFilePathStrategyJobFolders extends StoredFilePathStrategy {
     override def makeStoredFilePath(sopInstanceUID: String): String = {
       val file = new File(getSubDir, sopInstanceUID + ".dcm")
-      val path = file.getAbsolutePath.substring(mainDirName.size + 1)
+      val path = file.getAbsolutePath.substring(mainDirName.length + 1)
       path
     }
   }
@@ -85,24 +74,25 @@ class DicomReceiver(mainDir: File, myPacs: PACS, receivedObjectHandler: Received
       myPacs.aeTitle, // our AETitle
       mainDir, // directory for temporary and fetched files
       new StoredFilePathStrategyJobFolders, // strategy for naming incoming DICOM files
-      receivedObjectHandler)
+      receivedObjectHandler
+    )
   }
 
-  private def getPresentationContext: LinkedList[PresentationContext] = {
-    val presentationContextList = new LinkedList[PresentationContext]
+  private def getPresentationContext: java.util.LinkedList[PresentationContext] = {
+    val presentationContextList = new java.util.LinkedList[PresentationContext]
 
-    val tslist = new LinkedList[String]
+    val tslist = new java.util.LinkedList[String]
     tslist.add(TransferSyntax.ImplicitVRLittleEndian)
     tslist.add(TransferSyntax.ExplicitVRLittleEndian)
-    presentationContextList.add(new PresentationContext(3.toByte, SOPClass.PatientRootQueryRetrieveInformationModelMove, tslist));
-    return presentationContextList;
+    presentationContextList.add(new PresentationContext(3.toByte, SOPClass.PatientRootQueryRetrieveInformationModelMove, tslist))
+    presentationContextList
   }
 
   /**
-   * Perform DICOM C-MOVE.
-   *
-   * @return true on success
-   */
+    * Perform DICOM C-MOVE.
+    *
+    * @return true on success
+    */
   def cmove(specification: AttributeList, srcPacs: PACS, dstPacs: PACS, affectedSOPClass: String = SOPClass.PatientRootQueryRetrieveInformationModelMove): Option[String] = {
     if (subDirFile.isDefined) {
       subDirFile.get.mkdirs
@@ -116,7 +106,7 @@ class DicomReceiver(mainDir: File, myPacs: PACS, receivedObjectHandler: Received
       //val affectedSOPClass = SOPClass.StudyRootQueryRetrieveInformationModelMove
       //val affectedSOPClass = SOPClass.PatientRootQueryRetrieveInformationModelMove
 
-      logger.info("Starting C-MOVE of files from " + srcPacs.aeTitle + " to " + dstPacs.aeTitle + " with specification of \n" + specAsString);
+      logger.info("Starting C-MOVE of files from " + srcPacs.aeTitle + " to " + dstPacs.aeTitle + " with specification of \n" + specAsString)
       try {
         val moveSOPClassSCU = new MoveSOPClassSCU(
           srcPacs.host, // source host
@@ -125,14 +115,14 @@ class DicomReceiver(mainDir: File, myPacs: PACS, receivedObjectHandler: Received
           myPacs.aeTitle, // callingAETitle aeTitle
           dstPacs.aeTitle, // moveDestination
           affectedSOPClass, //  affectedSOPClass
-          specification) // identifier
+          specification
+        ) // identifier
         val status = moveSOPClassSCU.getStatus
         logger.info("Completed C-MOVE.  status: " + status + "  hex: " + status.formatted("%x"))
         None
       } catch {
-        case e: Exception => {
+        case e: Exception =>
           Some("CMove error: " + fmtEx(e))
-        }
       }
     } else Some("The subdirectory value must be set before performing a C-MOVE.  Use setSubDir")
   }
@@ -143,14 +133,14 @@ class DicomReceiver(mainDir: File, myPacs: PACS, receivedObjectHandler: Received
   //  }
 
   /** Start a DICOM receiver. */
-  private def startReceiver: Unit = {
+  private def startReceiver(): Unit = {
     println("==================================== DicomReceiver.startReceiver") // TODO rm
     val dispatcherThread = new Thread(dispatcher)
-    dispatcherThread.start();
+    dispatcherThread.start()
     logger.info("Started DICOM receiver: " + myPacs)
   }
 
-  startReceiver
+  startReceiver()
 }
 
 object DicomReceiver extends Logging {
@@ -189,7 +179,7 @@ object DicomReceiver extends Logging {
     val clinPacs = new PACS("VMSDBD", "10.30.65.100", 105)
 
     val thisPacs = wlqaTestPacs
-    val thatPacs = clinPacs
+    val thatPacs = irrerPacs
 
     val dicomReceiver = new DicomReceiver(mainDir, thisPacs)
 
@@ -206,18 +196,22 @@ object DicomReceiver extends Logging {
     //val seriesUID = "1.2.246.352.221.47109383203357140424171245409074821033"
     //val seriesUID = "1.2.246.352.61.2.5649017917321910891.9616106119503134379" // works
 
-    val SOPInstanceUID = "1.2.246.352.63.1.5661800265424807387.1120403681608530336"
+    val seriesUID = "1.3.6.1.4.1.22361.17483834219463.1233230305.1566414913462.466"
+
+    // val SOPInstanceUID = "1.2.246.352.63.1.5661800265424807387.1120403681608530336"
+    // val SOPInstanceUID = "1.2.246.352.62.2.5129711748376230466.9561518987460938120"
 
     //val studyInstanceUID = "1.2.840.113704.1.111.5364.1467809429.7"
 
-    val id = addAttr(TagFromName.SOPInstanceUID, SOPInstanceUID, buildIdentifier)
-    //val id = addAttr(TagFromName.SeriesInstanceUID, seriesUID, buildIdentifier)
+    //val id = addAttr(TagFromName.SOPInstanceUID, SOPInstanceUID, buildIdentifier)
+    val id = addAttr(TagFromName.SeriesInstanceUID, seriesUID, buildIdentifier)
     //val id = addAttr(TagFromName.StudyInstanceUID, studyInstanceUID, buildIdentifier)
 
     println("localPacs: " + thisPacs)
     println("remotePacs: " + thatPacs)
 
-    dicomReceiver.setSubDir(SOPInstanceUID)
+    //dicomReceiver.setSubDir(SOPInstanceUID)
+    dicomReceiver.setSubDir(seriesUID)
     //dicomReceiver.setSubDir(studyInstanceUID)
     println("Putting files into " + dicomReceiver.getSubDir.getAbsolutePath)
     Utility.deleteFileTree(dicomReceiver.getSubDir)
@@ -225,7 +219,7 @@ object DicomReceiver extends Logging {
     println("Number of files received: " + count)
     success match {
       case Some(msg) => println("Failed: " + msg)
-      case _ => println("success.")
+      case _         => println("success.")
     }
 
     System.exit(0)
