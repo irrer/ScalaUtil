@@ -16,6 +16,7 @@
 
 package edu.umro.ScalaUtil
 
+import com.pixelmed.dicom.AttributeList
 import edu.umro.util.Utility
 import resource.managed
 
@@ -285,6 +286,44 @@ object FileUtil {
       {
         writeZipToFileTree(zipFileIn, parentDir)
       }
+    }
+  }
+
+  /**
+    * Support writing content to a zipped byte array.
+    */
+  class ToZipOutputStream() {
+    private val streamOut = new ByteArrayOutputStream()
+    private val zipOut = new ZipOutputStream(streamOut)
+
+    /**
+      * Write bytes to a zipped byte array.
+      * @param data Data to write.
+      * @param name Path name in zip file, e.g.: foo/bar.txt
+      */
+    def write(data: Array[Byte], name: String): Unit = {
+      val zipEntry = new ZipEntry(name)
+      zipOut.putNextEntry(zipEntry)
+      zipOut.write(data)
+      zipOut.closeEntry()
+    }
+
+    /**
+      * Write DICOM to a zipped byte array.
+      *
+      * @param al DICOM to write.
+      * @param path Path name in zip file, e.g.: foo/bar.txt
+      * @param sourceApplication Name of software application. (arbitrary name).
+      */
+    def writeDicom(al: AttributeList, path: String, sourceApplication: String): Unit = {
+      val outStream = new ByteArrayOutputStream()
+      DicomUtil.writeAttributeList(al, outStream, sourceApplication)
+      write(outStream.toByteArray, path)
+    }
+
+    def finish(): Array[Byte] = {
+      zipOut.close()
+      streamOut.toByteArray
     }
   }
 
