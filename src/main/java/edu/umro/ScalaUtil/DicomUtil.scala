@@ -161,15 +161,41 @@ object DicomUtil {
     val vr = if (vrDict == null) attribute.getVR else vrDict
     val VALUE_SEPARATOR = " \\ "
     val MAX_LINE_LENGTH = 500
+    val MAX_REPEAT = 3 // if a value repeats more than this many times, then print a compressed version
 
-    def foldStringList(list: List[String], valueSeparator: String): String =
-      list.foldLeft("")((t, v) =>
-        t.length match {
-          case 0                              => v
-          case size if size > MAX_LINE_LENGTH => t
-          case _                              => t + valueSeparator + v
+    def foldStringList(list: List[String], valueSeparator: String = VALUE_SEPARATOR): String = {
+
+      case class Group(text: String, size: Int) {
+        override def toString: String = {
+          if (size <= MAX_REPEAT) // if there are only a few of them, then print them all
+            (0 until size).map(_ => text).mkString(VALUE_SEPARATOR)
+          else
+            text + " (repeated " + size + " times)" // if there are many, then compress them
         }
-      )
+      }
+
+      def makeGroups(seq: Seq[String], groupList: Seq[Group] = Seq()): Seq[Group] = {
+        0 match {
+          case _ if seq.isEmpty =>
+            groupList
+          case _ if groupList.isEmpty =>
+            makeGroups(seq.tail, Seq(Group(seq.head, 1)))
+          case _ =>
+            val g = groupList.last
+            if (g.text.equals(seq.head))
+              makeGroups(seq.tail, groupList.dropRight(1) :+ Group(g.text, g.size + 1))
+            else {
+              if (groupList.size > (MAX_LINE_LENGTH / 5)) // if the line is getting too long, then stop.
+                groupList
+              else
+                makeGroups(seq.tail, groupList :+ Group(seq.head, 1))
+            }
+        }
+      }
+
+      val text = makeGroups(list).mkString(valueSeparator)
+      text
+    }
 
     def tagDetails: String = {
       val vrText: String = if (vr == null) "??" else new String(vr)
@@ -209,7 +235,7 @@ object DicomUtil {
 
     def toOtherByte(attr: OtherByteAttribute): String = {
       val data = limitedCopy(attr.getByteValues, MAX_LINE_LENGTH / 3)
-      foldStringList(data.map(d => (d.toInt & 0xff).formatted("0x%x")), " ")
+      data.map(d => (d.toInt & 0xff).formatted("0x%x")).mkString(" ")
     }
 
     def toOtherFloat(attr: OtherFloatAttribute): String = {
@@ -219,7 +245,7 @@ object DicomUtil {
 
     def toOtherWord(attr: OtherWordAttribute): String = {
       val data = limitedCopy(attr.getShortValues, MAX_LINE_LENGTH / 3)
-      foldStringList(data.map(d => ((d & 0xffff) / 256).formatted("0x%x")), " ")
+      data.map(d => ((d & 0xffff) / 256).formatted("0x%x")).mkString(" ")
     }
 
     def toSequenceAttribute(attr: SequenceAttribute): String = {
@@ -646,6 +672,15 @@ object DicomUtil {
     * Self test.
     */
   def main(args: Array[String]): Unit = {
+
+    if (true) {
+      val file = new File("""D:\tmp\aqa\GapSkew\dicom\GapSkewRtPlans\RP.1.2.246.352.71.5.824327626427.478933.20170215160924.dcm""")
+      //val file = new File("""D:\tmp\aqa\GapSkew\dicom\Study_1\RTIMAGE_01\RTIMAGE_003_2020-03-23T19-12-25.000.dcm""")
+      val al = new AttributeList
+      al.read(file)
+      println("\n--------\n" + attributeListToString(al) + "\n--------\n")
+      System.exit(99)
+    }
 
     val fileList = {
       val dir = new File("src/test/resources")
