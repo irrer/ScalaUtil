@@ -26,39 +26,39 @@ import com.pixelmed.network.FindSOPClassSCU
 import com.pixelmed.network.IdentifierHandler
 
 /**
- * Support for C-FIND.
- *
- * The possible query retrieve information models are:
- *
- *   StudyRootQueryRetrieveInformationModelFind        = "1.2.840.10008.5.1.4.1.2.2.1"
- *   PatientRootQueryRetrieveInformationModelFind      = "1.2.840.10008.5.1.4.1.2.1.1"
- *   PatientStudyOnlyQueryRetrieveInformationModelFind = "1.2.840.10008.5.1.4.1.2.3.1"
- *
- * The possible query levels are:
- *
- *   PATIENT
- *   STUDY
- *   SERIES
- *   IMAGE
- */
+  * Support for C-FIND.
+  *
+  * The possible query retrieve information models are:
+  *
+  *   StudyRootQueryRetrieveInformationModelFind        = "1.2.840.10008.5.1.4.1.2.2.1"
+  *   PatientRootQueryRetrieveInformationModelFind      = "1.2.840.10008.5.1.4.1.2.1.1"
+  *   PatientStudyOnlyQueryRetrieveInformationModelFind = "1.2.840.10008.5.1.4.1.2.3.1"
+  *
+  * The possible query levels are:
+  *
+  *   PATIENT
+  *   STUDY
+  *   SERIES
+  *   IMAGE
+  */
 
 object DicomCFind extends IdentifierHandler with Logging {
 
   object QueryRetrieveLevel extends Enumeration {
-    val STUDY = Value
-    val SERIES = Value
-    val IMAGE = Value
+    val STUDY: QueryRetrieveLevel.Value = Value
+    val SERIES: QueryRetrieveLevel.Value = Value
+    val IMAGE: QueryRetrieveLevel.Value = Value
   }
 
   object QueryRetrieveInformationModel extends Enumeration {
-    val StudyRoot = Value
-    val PatientRoot = Value
-    val PatientStudyOnly = Value
+    val StudyRoot: QueryRetrieveInformationModel.Value = Value
+    val PatientRoot: QueryRetrieveInformationModel.Value = Value
+    val PatientStudyOnly: QueryRetrieveInformationModel.Value = Value
 
-    def sopClassOf(qrim: QueryRetrieveInformationModel.Value) = {
+    def sopClassOf(qrim: QueryRetrieveInformationModel.Value): String = {
       qrim match {
-        case StudyRoot => SOPClass.StudyRootQueryRetrieveInformationModelFind
-        case PatientRoot => SOPClass.PatientRootQueryRetrieveInformationModelFind
+        case StudyRoot        => SOPClass.StudyRootQueryRetrieveInformationModelFind
+        case PatientRoot      => SOPClass.PatientRootQueryRetrieveInformationModelFind
         case PatientStudyOnly => SOPClass.PatientStudyOnlyQueryRetrieveInformationModelFind
       }
     }
@@ -68,48 +68,52 @@ object DicomCFind extends IdentifierHandler with Logging {
   private val defaultQueryLevel = QueryRetrieveLevel.SERIES
 
   /**
-   * Handle the incoming C-FIND results.
-   */
+    * Handle the incoming C-FIND results.
+    */
   private class IdentHandler(limit: Option[Int], association: Association) extends IdentifierHandler {
     private val list = scala.collection.mutable.ArrayBuffer[AttributeList]()
 
-    override def doSomethingWithIdentifier(attributeList: AttributeList) = {
+    override def doSomethingWithIdentifier(attributeList: AttributeList): Unit = {
       //logger.trace("Got attributes: " + attributeList.toString().replace('\u0000', ' '));  // log null chars as blanks
       if (limit.isEmpty || (limit.isDefined && (list.size < limit.get))) {
         list += attributeList
       } else {
         val msg = "C-FIND limit of " + limit.get + " items exceeded.  Shutting down connection."
         logger.warn(msg)
-        association.abort
+        association.abort()
       }
     }
 
     /**
-     * Get the items received.  This is valid whether or not the limit was exceeded.
-     */
-    def get = list.toSeq
+      * Get the items received.  This is valid whether or not the limit was exceeded.
+      */
+    def get: Seq[AttributeList] = list
   }
 
   /**
-   * Perform a DICOM C-FIND, returning the list attribute lists.
-   *
-   * @param callingAETitle: AE title
-   *
-   * @param calledPacs: query against this PACS
-   *
-   * @param attributeList: search parameters
-   *
-   * @param queryLevel: Query level, defaults to SERIES
-   *
-   * @param limit: If given, stop when this many results have been acquired.
-   *
-   * @param affectedSOPClass: Query information model.  Defaults to Study Root
-   */
+    * Perform a DICOM C-FIND, returning the list attribute lists.
+    *
+    * @param callingAETitle: AE title
+    *
+    * @param calledPacs: query against this PACS
+    *
+    * @param attributeList: search parameters
+    *
+    * @param queryLevel: Query level, defaults to SERIES
+    *
+    * @param limit: If given, stop when this many results have been acquired.
+    *
+    * @param queryRetrieveInformationModel: Query information model.  Defaults to Study Root
+    */
 
-  def cfind(callingAETitle: String, calledPacs: PACS, attributeList: AttributeList,
-    queryLevel: QueryRetrieveLevel.Value = QueryRetrieveLevel.SERIES,
-    limit: Option[Int] = None,
-    queryRetrieveInformationModel: QueryRetrieveInformationModel.Value = defaultQueryInformationModel): Seq[AttributeList] = {
+  def cfind(
+      callingAETitle: String,
+      calledPacs: PACS,
+      attributeList: AttributeList,
+      queryLevel: QueryRetrieveLevel.Value = QueryRetrieveLevel.SERIES,
+      limit: Option[Int] = None,
+      queryRetrieveInformationModel: QueryRetrieveInformationModel.Value = defaultQueryInformationModel
+  ): Seq[AttributeList] = {
 
     val affectedSOPClass = QueryRetrieveInformationModel.sopClassOf(queryRetrieveInformationModel)
     // use a copy so as not to modify caller's copy
@@ -126,7 +130,7 @@ object DicomCFind extends IdentifierHandler with Logging {
       val identHandler = new IdentHandler(limit, association)
       val findSOPClassSCU = new FindSOPClassSCU(association, affectedSOPClass, attrList, identHandler)
       val list = identHandler.get
-      association.release
+      association.release()
       list
     } catch {
       case t: Throwable =>
@@ -142,8 +146,9 @@ object DicomCFind extends IdentifierHandler with Logging {
 
     // val callingAETitle = "IRRER"
     // val calledPacs = new PACS("VMSDBD_EVAL", "VMSDBD_EVAL", 105)
+    //val callingAETitle = "IRRER_CLINICAL"
     val callingAETitle = "WLQA_TEST"
-    val calledPacs = new PACS("VMSDBD", "VMSDBD", 105)
+    val calledPacs = new PACS("VMSDBD", "10.30.65.100", 105)
 
     val al = new AttributeList
 
@@ -169,16 +174,18 @@ object DicomCFind extends IdentifierHandler with Logging {
         TagFromName.ContentDate,
         TagFromName.ContentTime,
         TagFromName.SeriesInstanceUID,
-        TagFromName.SOPInstanceUID)
+        TagFromName.SOPInstanceUID
+      )
 
       def at2String(tag: AttributeTag): Option[String] = {
         val at = al.get(tag)
-        val text = if (at == null) None
-        else Some(DicomUtil.dictionary.getNameFromTag(tag) + " : " + at.getSingleStringValueOrEmptyString)
+        val text =
+          if (at == null) None
+          else Some(DicomUtil.dictionary.getNameFromTag(tag) + " : " + at.getSingleStringValueOrEmptyString)
         text
       }
 
-      list.map(tag => at2String(tag)).flatten.mkString("    ")
+      list.flatMap(tag => at2String(tag)).mkString("    ")
     }
 
     //    TagFromName.AcquisitionDate
@@ -223,20 +230,23 @@ object DicomCFind extends IdentifierHandler with Logging {
     //putValue("1.2.246.352.61.2.5381207706442521315.17095139606086369684", TagFromName.SeriesInstanceUID) // Daily QA REG TX6 8 May 2020
     //putValue("1.2.246.352.61.2.5712771626225617482.7784404980121987989", TagFromName.SeriesInstanceUID) // Daily QA RTIMAGE TX6 8 May 2020
 
-    putValue("$TB3_OBI2020Q2", TagFromName.PatientID)
+    //putValue("$TB3_OBI2020Q2", TagFromName.PatientID)
+    putValue("$TX2_OBI_2021Q*", TagFromName.PatientID)
+    //putValue("H192448", TagFromName.PatientID)
 
     //put(TagFromName.SOPInstanceUID)
     put(TagFromName.SeriesInstanceUID)
 
-    put(TagFromName.Modality)
-    //putValue("RTIMAGE", TagFromName.Modality)
+    //put(TagFromName.Modality)
+    putValue("RTIMAGE", TagFromName.Modality)
     //put(TagFromName.SeriesDate)
     //    put(TagFromName.SeriesTime)
+    put(TagFromName.StudyDate)
+    put(TagFromName.StudyTime)
     put(TagFromName.SeriesDate)
     put(TagFromName.SeriesTime)
     put(TagFromName.AcquisitionDate)
     put(TagFromName.AcquisitionTime)
-    put(TagFromName.SeriesTime)
     put(TagFromName.ContentDate)
     put(TagFromName.ContentTime)
     //put(TagFromName.SeriesInstanceUID)
@@ -259,7 +269,8 @@ object DicomCFind extends IdentifierHandler with Logging {
         al, // attributeList
         qrl, // queryLevel
         Some(5000), // limit
-        qrim)
+        qrim
+      )
       if (resultList.nonEmpty) {
         println("query level: " + qrl + "    query retrieve info model: " + qrim)
 

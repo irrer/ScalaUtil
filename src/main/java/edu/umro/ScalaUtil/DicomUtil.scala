@@ -20,7 +20,6 @@ import com.pixelmed.dicom.Attribute
 import com.pixelmed.dicom.AttributeList
 import com.pixelmed.dicom.AttributeTag
 import com.pixelmed.dicom.AttributeTagAttribute
-import com.pixelmed.dicom.DicomDictionary
 import com.pixelmed.dicom.DicomFileUtilities
 import com.pixelmed.dicom.DicomInputStream
 import com.pixelmed.dicom.DicomOutputStream
@@ -50,7 +49,7 @@ import java.util.zip.ZipOutputStream
 
 object DicomUtil {
 
-  val dictionary = new DicomDictionary
+  val dictionary = TagByName.dict
 
   private val minorIndent = "  "
   private val indentText = minorIndent + minorIndent

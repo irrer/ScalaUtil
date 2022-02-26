@@ -26,15 +26,19 @@ import com.pixelmed.dicom.AttributeTag
 import com.pixelmed.dicom.AttributeFactory
 import com.pixelmed.dicom.SOPClass
 import com.pixelmed.dicom.TransferSyntax
+
 import java.util.Date
 import com.pixelmed.dicom.OtherByteAttribute
 import com.pixelmed.dicom.OtherWordAttribute
+
 import java.io.FileOutputStream
 import com.pixelmed.dicom.FileMetaInformation
 import com.pixelmed.dicom.DicomDictionary
 import com.pixelmed.dicom.Attribute
+
 import scala.util.Random
 import com.pixelmed.dicom.IntegerStringAttribute
+import edu.umro.DicomDict.TagByName
 import org.slf4j.impl.StaticLoggerBinder
 
 /**
@@ -213,7 +217,7 @@ object ConstructMhd {
       make(TagFromName.ReferringPhysicianName, "none")
       make(TagFromName.PatientSex, "O")
       make(TagFromName.SliceThickness, mhd.ElementSpacing(2).toString)
-      makeDbl(DicomUtil.dictionary.getTagFromName("KVP"), 120)
+      makeDbl(TagByName.KVP, 120)
       makeDbl(TagFromName.SpacingBetweenSlices, mhd.ElementSpacing(2).toDouble)
       make(TagFromName.DeviceSerialNumber, "001")
       make(TagFromName.SoftwareVersions, "irrer 0.0.2")
@@ -323,7 +327,7 @@ FOR RESEARCH ONLY.  NOT FOR CLINICAL USE.
     System.exit(1)
   }
 
-  private val dict = new DicomDictionary
+  private val dict = TagByName.dict
   private val rand = new Random
 
   private val defaultPatId = "$" + ("00000000" + rand.nextLong.toString).takeRight(8)

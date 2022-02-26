@@ -33,7 +33,6 @@ import com.pixelmed.dicom.OtherWordAttribute
 
 import java.io.FileOutputStream
 import com.pixelmed.dicom.FileMetaInformation
-import com.pixelmed.dicom.DicomDictionary
 import com.pixelmed.dicom.Attribute
 
 import scala.util.Random

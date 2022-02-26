@@ -176,10 +176,10 @@ object DicomReceiver extends Logging {
     val umroarchivePacs = new PACS("UMRO_ARCHIVE", "10.30.3.69", 104)
     val evalPacs = new PACS("EVAL1109", "141.214.124.189", 104)
     val wlqaTestPacs = new PACS("WLQA_TEST", "141.214.125.209", 5682)
-    val clinPacs = new PACS("VMSDBD", "10.30.65.100", 105)
+    val clinPacs = new PACS("VMSDBD", "uhroariaspr1", 105)
 
     val thisPacs = wlqaTestPacs
-    val thatPacs = irrerPacs
+    val thatPacs = clinPacs
 
     val dicomReceiver = new DicomReceiver(mainDir, thisPacs)
 
@@ -194,9 +194,10 @@ object DicomReceiver extends Logging {
     //val seriesUID = "1.2.246.352.71.2.427549902257.4634976.20190825123541"
     //val seriesUID = "1.2.246.352.71.2.824327626427.4631129.20190821171552"
     //val seriesUID = "1.2.246.352.221.47109383203357140424171245409074821033"
-    //val seriesUID = "1.2.246.352.61.2.5649017917321910891.9616106119503134379" // works
+    // val seriesUID = "1.2.246.352.61.2.5649017917321910891.9616106119503134379" // works
+    val seriesUID = "1.2.246.352.62.2.5454816943001333014.10902676767571471256"
 
-    val seriesUID = "1.3.6.1.4.1.22361.17483834219463.1233230305.1566414913462.466"
+    //val seriesUID = "1.3.6.1.4.1.22361.17483834219463.1233230305.1566414913462.466"
 
     // val SOPInstanceUID = "1.2.246.352.63.1.5661800265424807387.1120403681608530336"
     // val SOPInstanceUID = "1.2.246.352.62.2.5129711748376230466.9561518987460938120"
@@ -215,12 +216,19 @@ object DicomReceiver extends Logging {
     //dicomReceiver.setSubDir(studyInstanceUID)
     println("Putting files into " + dicomReceiver.getSubDir.getAbsolutePath)
     Utility.deleteFileTree(dicomReceiver.getSubDir)
-    val success = dicomReceiver.cmove(id, thatPacs, thisPacs, SOPClass.PatientRootQueryRetrieveInformationModelMove)
-    println("Number of files received: " + count)
-    success match {
-      case Some(msg) => println("Failed: " + msg)
-      case _         => println("success.")
-    }
+    Seq(
+      // SOPClass.StudyRootQueryRetrieveInformationModelMove,
+      SOPClass.PatientRootQueryRetrieveInformationModelMove
+      // SOPClass.PatientStudyOnlyQueryRetrieveInformationModelMove
+    ).map(s => {
+      val success = dicomReceiver.cmove(id, thatPacs, thisPacs, s)
+      println(s + "    Number of files received: " + count)
+
+      success match {
+        case Some(msg) => println("Failed: " + msg)
+        case _         => println("success.")
+      }
+    })
 
     System.exit(0)
   }
