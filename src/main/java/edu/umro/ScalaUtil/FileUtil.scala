@@ -424,10 +424,31 @@ object FileUtil {
     }
   }
 
+  /**
+    * Perform the given operation on every file in the given file tree. Files in
+    * each directory are processed in alphabetical order.
+    *
+    * Note that this function may throw an exception if there is a file permission problem.
+    *
+    * @param file Top level file.
+    * @param process Process to perform.
+    */
+  def processFileTree(file: File, process: File => Unit): Unit = {
+    process(file)
+    if (file.isDirectory) {
+      file.listFiles.sortBy(_.getName).foreach(f => processFileTree(f, process))
+    }
+  }
+
   def main(args: Array[String]): Unit = { // TODO rm
     // add comment to test git
     val j = edu.umro.ScalaUtil.FileUtil.replaceInvalidFileNameCharacters("gleeParity", 'X')
     println("j: " + j)
+
+    def showPath(file: File): Unit =
+      println("File path: " + file.getAbsolutePath)
+
+    processFileTree(new File("""D:\tmp\joann"""), showPath)
   }
 
 }
