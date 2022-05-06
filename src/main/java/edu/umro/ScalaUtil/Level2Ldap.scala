@@ -16,56 +16,50 @@
 
 package edu.umro.ScalaUtil
 
-import java.util.HashSet
 import java.util.Properties
 import javax.naming.Context
 import javax.naming.NamingEnumeration
-import javax.naming.directory.Attribute
-import javax.naming.directory.Attributes
-import javax.naming.directory.DirContext
 import javax.naming.directory.InitialDirContext
 import javax.naming.directory.SearchControls
 import javax.naming.directory.SearchResult
 import javax.naming.ldap.LdapName
 import javax.naming.ldap.Rdn
-import scala.collection.mutable.ArrayBuffer
-import edu.umro.util.Log
-import java.io.Closeable
-import collection.JavaConverters._
-import resource.managed
+import scala.collection.JavaConverters._
 
 /**
- * Wrapper for LDAP service oriented for med.umich.
- *
- * Note that each call to the LDAP service opens and closes a connection, and so is
- * somewhat slow.  The caller should consider caching results to avoid unnecessary
- * overhead.
- *
- * @author irrer
- *
- */
+  * Wrapper for LDAP service oriented for med.umich.
+  *
+  * Note that each call to the LDAP service opens and closes a connection, and so is
+  * somewhat slow.  The caller should consider caching results to avoid unnecessary
+  * overhead.
+  *
+  * @author irrer
+  *
+  */
 
 object Level2Ldap {
 
   private val baseSearchContext = "dc=med,dc=umich,dc=edu"
 
-  val umichMedUrl = "ldap://ldap.ent.med.umich.edu:636/"
+  val umichMedUrl = "ldap://ldap.ent.med.umich.edu:636/" // production service
+  // val umichMedUrl = "ldap://ldap2.med.umich.edu:636/" // production backup service
+  // val umichMedUrl = "ldap://ldap.p-ent.med.umich.edu:636/" // pre-production service
 
-  val ldapUrl = umichMedUrl
+  val ldapUrl: String = umichMedUrl
 
-  def umichMedQuery(userId: String) = "cn=" + userId + ",ou=people,dc=med,dc=umich,dc=edu"
+  def umichMedQuery(userId: String): String = "cn=" + userId + ",ou=people,dc=med,dc=umich,dc=edu"
 
   /**
-   * Properties shared by all queries.
-   */
+    * Properties shared by all queries.
+    */
   private def basicProperties: Properties = {
     val environment = new Properties
 
-    environment.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
-    environment.put(Context.PROVIDER_URL, ldapUrl);
-    environment.put(Context.SECURITY_PROTOCOL, "ssl");
+    environment.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory")
+    environment.put(Context.PROVIDER_URL, ldapUrl)
+    environment.put(Context.SECURITY_PROTOCOL, "ssl")
     // don't dereference aliases because it puts too much load on LDAP servers
-    environment.put("java.naming.ldap.derefAliases", "never");
+    environment.put("java.naming.ldap.derefAliases", "never")
     environment
   }
 
@@ -77,48 +71,46 @@ object Level2Ldap {
       else
         Right(dc)
     } catch {
-      case t: Throwable => {
+      case t: Throwable =>
         Left("Exception while to connecting to LDAP server " + ldapUrl + " : " + t)
-      }
     }
   }
 
   private def closeDirContext(dirContext: InitialDirContext): Unit = {
     try {
-      dirContext.close
+      dirContext.close()
     } catch {
-      case t: Throwable => ;
+      case _: Throwable => ;
     }
   }
 
   /**
-   * Get list of the groups in the attribute list and set them to lower case.
-   *
-   * @param attributes
-   *
-   * @return List of the groups in the attribute list set to lower case.
-   */
+    * Get list of the groups in the attribute list and set them to lower case.
+    *
+    * @param namingEnum LDAP data.
+    *
+    * @return List of the groups in the attribute list set to lower case.
+    */
   private def extractGroupList(namingEnum: NamingEnumeration[SearchResult]): Either[String, Set[String]] = {
     try {
       val entryList = namingEnum.asScala.toList
 
       val attributesList = entryList.map(entry => entry.getAttributes)
 
-      val attrList = attributesList.map(attr => attr.getAll.asScala).flatten
+      val attrList = attributesList.flatMap(attr => attr.getAll.asScala)
 
       val groupMem = attrList.filter { a => a.getID.equalsIgnoreCase("groupMembership") }
 
-      val ldnList = groupMem.map { gm => (gm.getAll).asScala.toList }.flatten.map { x => new LdapName(x.toString) }
+      val ldnList = groupMem.flatMap { gm => gm.getAll.asScala.toList }.map { x => new LdapName(x.toString) }
 
-      val rdnList = ldnList.map { ldn => ldn.getRdns.toArray.toList.map { o => o.asInstanceOf[Rdn] } }.flatten
+      val rdnList = ldnList.flatMap { ldn => ldn.getRdns.toArray.toList.map { o => o.asInstanceOf[Rdn] } }
 
       val groupList = rdnList.filter { rdn => rdn.getType.equalsIgnoreCase("cn") }.map { r => r.getValue.toString }.toSet
 
       Right(groupList)
     } catch {
-      case t: Throwable => {
+      case t: Throwable =>
         Left("Unexpected exception while getting groups from LDAP reply: " + t)
-      }
     }
   }
 
@@ -127,19 +119,19 @@ object Level2Ldap {
   }
 
   /**
-   * Get list of the groups in the attribute list and set them to lower case.
-   *
-   * @param attributes
-   *
-   * @return List of the groups in the attribute list set to lower case.
-   */
+    * Get list of the groups in the attribute list and set them to lower case.
+    *
+    * @param namingEnum LDAP data.
+    *
+    * @return List of the groups in the attribute list set to lower case.
+    */
   private def extractUserInfo(namingEnum: NamingEnumeration[SearchResult]): Either[String, UserInfo] = {
     try {
       val entryList = namingEnum.asScala.toList
 
       val attributesList = entryList.map(entry => entry.getAttributes)
 
-      val attrList = attributesList.map(attr => attr.getAll.asScala).flatten
+      val attrList = attributesList.flatMap(attr => attr.getAll.asScala)
 
       def get(tag: String): String = {
         attrList.find { a => a.getID.equalsIgnoreCase(tag) }.get.get.asInstanceOf[String]
@@ -149,25 +141,23 @@ object Level2Ldap {
       val sn = get("sn")
       val mail = get("mail")
 
-      Right(new UserInfo(sn, givenName, mail))
+      Right(UserInfo(sn, givenName, mail))
     } catch {
-      case t: Throwable => {
+      case t: Throwable =>
         Left("Unexpected exception while getting groups from LDAP reply: " + t)
-      }
     }
   }
 
   /**
-   * Get the list of groups that the user is a member of.
-   *
-   * @param environment
-   *            LDAP properties.
-   *
-   * @return Either Left with error message or Right with list of groups.
-   */
+    * Get the list of groups that the user is a member of.
+    *
+    * @param userId User ID
+    * @param secret Password.
+    *
+    * @return Either Left with error message or Right with list of groups.
+    */
   def getGroupListOfUser(userId: String, secret: String): Either[String, Set[String]] = {
 
-    val empty = Set[String]()
     val environment = basicProperties
 
     environment.put(Context.SECURITY_AUTHENTICATION, "simple")
@@ -204,16 +194,15 @@ object Level2Ldap {
   }
 
   /**
-   * Get the list of groups that the user is a member of.
-   *
-   * @param environment
-   *            LDAP properties.
-   *
-   * @return Either Left with error message or Right with list of groups.
-   */
+    * Get the list of groups that the user is a member of.
+    *
+    * @param userId User ID.
+    * @param secret Password.
+    *
+    * @return Either Left with error message or Right with list of groups.
+    */
   def getUserInfo(userId: String, secret: String): Either[String, UserInfo] = {
     try {
-      val empty = Set[String]()
       val environment = basicProperties
 
       environment.put(Context.SECURITY_AUTHENTICATION, "simple")
@@ -248,11 +237,11 @@ object Level2Ldap {
   }
 
   /**
-   * Perform a health check to see if the authentication service is operational. Do
-   * this by contacting the authentication service.
-   *
-   * @return None if service is operational, error message if unhealthy.
-   */
+    * Perform a health check to see if the authentication service is operational. Do
+    * this by contacting the authentication service.
+    *
+    * @return None if service is operational, error message if unhealthy.
+    */
   def healthCheck: Option[String] = {
 
     val dirContext = openDirContext(basicProperties)
@@ -264,20 +253,19 @@ object Level2Ldap {
   }
 
   /**
-   * Determine if user has entered correct password according to LDAP.
-   *
-   * @param userId
-   *
-   * @param secret
-   *
-   * @return True if correct password.
-   */
+    * Determine if user has entered correct password according to LDAP.
+    *
+    * @param userId User ID.
+    * @param secret Password.
+    *
+    * @return True if correct password.
+    */
   private def userIsAuthenticated(userId: String, secret: String): Boolean = {
     val environment = basicProperties
 
     environment.put(Context.SECURITY_AUTHENTICATION, "simple")
-    val securityPricipal = umichMedQuery(userId)
-    environment.put(Context.SECURITY_PRINCIPAL, securityPricipal)
+    val securityPrincipal = umichMedQuery(userId)
+    environment.put(Context.SECURITY_PRINCIPAL, securityPrincipal)
     environment.put(Context.SECURITY_CREDENTIALS, secret)
 
     val dc = openDirContext(environment)
@@ -288,13 +276,13 @@ object Level2Ldap {
   }
 
   /**
-   *  For testing only.
-   */
+    *  For testing only.
+    */
 
   def main(args: Array[String]): Unit = {
-    System.out.println("Starting.  Using URL " + ldapUrl);
+    System.out.println("Starting.  Using URL " + ldapUrl)
     val health = Level2Ldap.healthCheck
-    val msg = if (health.isDefined) ("failed: " + health.get) else "is healthy"
+    val msg = if (health.isDefined) "failed: " + health.get else "is healthy"
     println("LDAP health status: " + msg)
 
     val userId = System.getProperty("user.name")
@@ -304,9 +292,9 @@ object Level2Ldap {
     println("authentication for user " + userId + " : " + Level2Ldap.userIsAuthenticated(userId, secret))
 
     println("\nUser: " + userId)
-    val grps = Level2Ldap.getGroupListOfUser(userId, secret)
-    if (grps.isRight) grps.right.get.toList.sorted.map { g => println("    " + g) }
-    else println("  :(  no groups: " + grps.left.get)
+    val groups = Level2Ldap.getGroupListOfUser(userId, secret)
+    if (groups.isRight) groups.right.get.toList.sorted.foreach { g => println("    " + g) }
+    else println("  :(  no groups: " + groups.left.get)
 
     val userInfo = Level2Ldap.getUserInfo(userId, secret)
     println("user info: " + userInfo)
