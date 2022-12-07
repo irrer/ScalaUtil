@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SrcRef</title>
+</head>
+<body>
+hey
+<div id="jj">
+    a b c d e
+</div>
+</body>
+<script>
+    var j = "hiya";
+    var element = document.getElementById("jj");
+    var rect = element.getBoundingClientRect();
+    console.log(rect.top, rect.right, rect.bottom, rect.left);
+
+    var text = rect.top + " " + rect.right + " " +  rect.bottom + " " + rect.left;
+    element.innerHTML = text;
+
+
+</script>
+</html>

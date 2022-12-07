@@ -231,16 +231,32 @@ object DicomCFind extends IdentifierHandler with Logging {
     //putValue("1.2.246.352.61.2.5712771626225617482.7784404980121987989", TagFromName.SeriesInstanceUID) // Daily QA RTIMAGE TX6 8 May 2020
 
     //putValue("$TB3_OBI2020Q2", TagFromName.PatientID)
-    putValue("$TX2_OBI_2021Q*", TagFromName.PatientID)
+
+    //putValue("BR1_2022_OBIQA", TagFromName.PatientID)  // fail
+    //               123456789.123456789.123456789.
+    //putValue("BR1_OBI_QA_2023_Q1", TagFromName.PatientID)  // fail
+    putValue("*R1_OBI_QA_2023_*", TagFromName.PatientID) // success
+    //putValue("*R1_OBI_QA_2023_*Q1", TagFromName.PatientID) // success
+    //putValue("$2357LONG_PATIENT_ID_ABCD", TagFromName.PatientID) // success
+    //putValue("*NT_ID_ABCD", TagFromName.PatientID) // success
+    //putValue("$LONG_ID_ABCDEFGHIJKL", TagFromName.PatientID) // success
+    //putValue("*NG_ID_AB*", TagFromName.PatientID) // success
+    //               123456789.123456789.123456789.
+    //               BR1_OBI_QA_2023_Q1
+    //putValue("R1_OBI_QA_2023_", TagFromName.PatientID) // fail
+    //putValue("$BR1-OBI4^Morning OBI QA", TagFromName.PatientName)  // fail
+
+    //                123456789.12345
     //putValue("H192448", TagFromName.PatientID)
 
     //put(TagFromName.SOPInstanceUID)
     put(TagFromName.SeriesInstanceUID)
 
     //put(TagFromName.Modality)
+    //putValue("REG", TagFromName.Modality)
     putValue("RTIMAGE", TagFromName.Modality)
-    //put(TagFromName.SeriesDate)
-    //    put(TagFromName.SeriesTime)
+    put(TagFromName.SeriesDate)
+    put(TagFromName.SeriesTime)
     put(TagFromName.StudyDate)
     put(TagFromName.StudyTime)
     put(TagFromName.SeriesDate)
@@ -249,9 +265,9 @@ object DicomCFind extends IdentifierHandler with Logging {
     put(TagFromName.AcquisitionTime)
     put(TagFromName.ContentDate)
     put(TagFromName.ContentTime)
-    //put(TagFromName.SeriesInstanceUID)
-    //put(TagFromName.AcquisitionDate)
-    //put(TagFromName.AcquisitionTime)
+    put(TagFromName.SeriesInstanceUID)
+    put(TagFromName.AcquisitionDate)
+    put(TagFromName.AcquisitionTime)
     //putValue("1.2.246.352.61.2.5649017917321910891.9616106119503134379", TagFromName.SeriesInstanceUID)
 
     //put(TagFromName.Modality)
@@ -269,7 +285,7 @@ object DicomCFind extends IdentifierHandler with Logging {
         al, // attributeList
         qrl, // queryLevel
         Some(5000), // limit
-        qrim
+        qrim // query model
       )
       if (resultList.nonEmpty) {
         println("query level: " + qrl + "    query retrieve info model: " + qrim)
@@ -280,7 +296,8 @@ object DicomCFind extends IdentifierHandler with Logging {
         //        println(m.formatted("%-10s  ") + s)
         //      })
 
-        println(resultList.map(r => r.toString.replace('\u0000', ' ')).mkString("\n"))
+        //println(resultList.map(r => r.toString.replace('\u0000', ' ')).mkString("\n"))
+        println(resultList.head.toString.replace('\u0000', ' '))
 
         println(resultList.map(r => al2Human(r)).mkString("\n"))
 
@@ -288,7 +305,10 @@ object DicomCFind extends IdentifierHandler with Logging {
 
         println("-----------------------------------------------------------------------------------------")
         println("-----------------------------------------------------------------------------------------")
-      }
+
+        println("PatientID List:\n    " + resultList.map(_.get(TagFromName.PatientID).getSingleStringValueOrEmptyString()).distinct.mkString("\n    "))
+      } else
+        println("Zero results")
       Thread.sleep(500)
     }
 
