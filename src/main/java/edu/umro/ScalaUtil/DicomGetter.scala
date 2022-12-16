@@ -465,7 +465,8 @@ object DicomGetter extends Logging {
     def fetchPatient(patientId: String): Unit = {
       dicomReceiver.setSubDir(patientId)
       val id = buildIdentifier
-      val id2 = addAttr(TagFromName.PatientID, patientId, id)
+      addAttr(TagFromName.PatientID, patientId, id)
+      addAttr(TagFromName.Modality, "RTPLAN", id)
       val subDir = new File(mainDir, patientId)
       if (subDir.exists) try {
         edu.umro.util.Utility.deleteFileTree(subDir)
@@ -509,7 +510,7 @@ object DicomGetter extends Logging {
     //regSeriesList.map(fetchSeries)
     //July_Missing.foreach(fetchSeries)
     //June29.foreach(fetchSeries)
-    fetchPatient("017076541")
+    fetchPatient("028803761")
 
     println("Done.  Elapsed ms: " + (System.currentTimeMillis - start))
     System.exit(0)
