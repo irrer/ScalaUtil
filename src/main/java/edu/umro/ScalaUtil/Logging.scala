@@ -16,51 +16,66 @@
 
 package edu.umro.ScalaUtil
 
-import org.slf4j.Logger
+import org.apache.logging.log4j.LogManager
 
 /**
- * Log messages.  Extend this trait and use the <code>logger</code> value to log messages.
- *
- * To bind slf4j to log4j, the following VM properties should be set, as in:
- *
- * <pre>
- *
- *     -Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager
- *     -Dlog4j2.configurationFile=src\main\resources\log4j2.xml
- *
- * </pre>
- *
- *
- *
- * Examples of use:
- *
- * <h3>Scala</h3>
- * <pre>
- *
- *     class MyClass extends Logging {
- *         logger.info("Hello from MyClass")
- *
- *         class SubClass {
- *             logger.trace("Hello from SubClass")
- *         }
- *     }
- *
- *     object MyObject extends Logging {
- *         logger.warn("Scary hello from MyObject")
- *     }
- *
- * </pre>
- */
+  * Log messages.  Extend this trait and use the <code>logger</code> value to log messages.
+  *
+  * By default, the src/main/resources/log4j2.xml configuration file as built in the jar in the classpath is used.
+  * Simply specifying a file in the execution directory will not override this.
+  *
+  * To use your own customized log file, add this to the VM command line:
+  * -Dlog4j2.configurationFile=log4j2.xml
+  *
+  * If there is a problem with logging, add this to the VM command line:
+  * -Dlog4j2.debug=""
+  *
+  * Alternately, un-comment this line (or add to calling application) to show more info:
+  * System.setProperty("log4j2.debug", "")
+  *
+  * In IntelliJ, to set VM options:
+  * (run menu) -->
+  * Edit Configurations -->
+  * Alt-V
+  *
+  * or
+  *
+  * Modify Options (or Alt-M) -->
+  * Check "Add VM Options" (or, again, Alt-V)
+  *
+  * Examples of use in code (also see test/java/TestLogging.scala):
+  *
+  * <h3>Scala</h3>
+  * <pre>
+  *
+  *     class MyClass extends Logging {
+  *         logger.info("Hello from MyClass")
+  *
+  *         class SubClass {
+  *             logger.trace("Hello from SubClass")
+  *         }
+  *     }
+  *
+  *     object MyObject extends Logging {
+  *         logger.warn("Scary hello from MyObject")
+  *     }
+  *
+  * </pre>
+  */
 trait Logging {
-  protected lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(this.getClass)
+  // If there is a problem with logging, un-comment this line (or add to calling application) to
+  // show more info.  Do this as static code before the first call to logging is made.
+  // System.setProperty("log4j2.debug", "")
+
+  protected val logger = LogManager.getLogger(this.getClass)
 
   /**
-   * Format a <code>Throwable</code>.
-   *
-   * @param throwable Contains description and stack trace.
-   *
-   * @return Human readable version of <code>Throwable</code> and stack trace.
-   */
+    * Format a <code>Throwable</code>.
+    *
+    * @param throwable Contains description and stack trace.
+    *
+    * @return Human readable version of <code>Throwable</code> and stack trace.
+    */
   def fmtEx(throwable: Throwable): String = {
     val textList = throwable.getStackTrace.map(ste => "\n    " + ste) // convert to text
     textList.foldLeft(throwable.toString)((t, ste) => t + ste) // join as one string

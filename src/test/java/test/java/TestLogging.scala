@@ -19,15 +19,45 @@ package test.java
 import edu.umro.ScalaUtil.Logging
 
 object TestLogging extends Logging {
-  protected val logNative = org.slf4j.LoggerFactory.getLogger("")
-  protected val logNativeClass = org.slf4j.LoggerFactory.getLogger(TestLogging.getClass)
-  protected val logNativeUtil = org.slf4j.LoggerFactory.getLogger(edu.umro.ScalaUtil.Util.getClass)
+  /*
+   *
+   * To use your own customized log file, add this to the VM command line:
+   *     -Dlog4j2.configurationFile=log4j2.xml
+   *
+   * If there is a problem with logging, add this to the VM command line:
+   *     -Dlog4j2.debug=""
+   *
+   * Alternately, un-comment this line (or add to calling application) to show more info:
+   *     System.setProperty("log4j2.debug", "")
+   *
+   * In IntelliJ, to set VM options:
+   *     (run menu) -->
+   *       Edit Configurations -->
+   *         Alt-V
+   *
+   *           or
+   *
+   *         Modify Options (or Alt-M) -->
+   *         Check "Add VM Options" (or, again, Alt-V)
+   *
+   */
 
   def main(args: Array[String]): Unit = {
-    logger.info("logger says hey")
-    logNative.info("logNative says hey")
-    logNativeClass.info("logNativeClass says hey")
-    logNativeUtil.info("logNativeUtil says hey")
+    println("-- Starting ...")
+    println("-- log4j2.debug: " + System.getProperty("log4j2.debug") + "  (null means off, empty string means activated)")
+    println("-- log4j2.configurationFile: " + System.getProperty("log4j2.configurationFile"))
+
+    // if logging is not working then calling this (can be called from calling application in
+    // static section) then logging will work with minimal formatting.
+    org.apache.log4j.BasicConfigurator.configure()
+    logger.error("logger says error")
+    logger.trace("logger says trace")
+    logger.warn("logger says warn")
+    logger.info("logger says info")
+    logger.debug("logger says debug")
+    logger.fatal("logger says fatal")
+    logger.info("This is\na multi-line\r\nmessage.")
+    println("-- Done.")
   }
 
 }

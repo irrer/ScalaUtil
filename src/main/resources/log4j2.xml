@@ -1,15 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="WARN">
+<Configuration strict="true" status="info" xmlns="http://logging.apache.org/log4j/2.0/config" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://logging.apache.org/log4j/2.0/config 
+    https://raw.githubusercontent.com/apache/logging-log4j2/master/log4j-core/src/main/resources/Log4j-config.xsd">
 
     <Appenders>
         <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{YYYY-MM-dd HH:mm:ss} [%t] %-5p %c{1}:%L - %msg%n" />
+            <PatternLayout pattern="%d{YYYY-MM-dd HH:mm:ss.SSS} %-5level %location | %msg\r\n" />
         </Console>
-
     </Appenders>
+
     <Loggers>
-        <Root level="info">
+        <!-- Only our code shows ALL log messages, the others show INFO. -->
+        <!--
+        <Logger name="org.aqa" level="ALL"/>
+        <Logger name="org.umro" level="ALL"/>
+        -->
+        <Root level="ALL">
             <AppenderRef ref="Console" />
         </Root>
     </Loggers>
 </Configuration>
+

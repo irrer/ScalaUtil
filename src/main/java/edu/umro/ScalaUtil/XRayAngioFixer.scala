@@ -16,36 +16,24 @@
 
 package edu.umro.ScalaUtil
 
-import java.io.File
-import java.io.FileInputStream
-import edu.umro.util.Utility
-import edu.umro.util.UMROGUID
-import com.pixelmed.dicom.AttributeList
-import com.pixelmed.dicom.TagFromName
-import com.pixelmed.dicom.AttributeTag
 import com.pixelmed.dicom.AttributeFactory
-import com.pixelmed.dicom.SOPClass
-import com.pixelmed.dicom.TransferSyntax
-
-import java.util.Date
+import com.pixelmed.dicom.AttributeList
+import com.pixelmed.dicom.AttributeTag
 import com.pixelmed.dicom.OtherByteAttribute
-import com.pixelmed.dicom.OtherWordAttribute
-
-import java.io.FileOutputStream
-import com.pixelmed.dicom.FileMetaInformation
-import com.pixelmed.dicom.Attribute
-
-import scala.util.Random
-import com.pixelmed.dicom.IntegerStringAttribute
-import org.slf4j.impl.StaticLoggerBinder
-
-import scala.collection.mutable.ArrayBuffer
 import com.pixelmed.dicom.OtherByteAttributeOnDisk
+import com.pixelmed.dicom.OtherWordAttribute
+import com.pixelmed.dicom.SOPClass
+import com.pixelmed.dicom.TagFromName
 import com.pixelmed.display.ConsumerFormatImageMaker
 import edu.umro.DicomDict.TagByName
-
-import javax.imageio.ImageIO
 import edu.umro.util.OpSys
+import edu.umro.util.Utility
+
+import java.io.File
+import java.io.FileOutputStream
+import java.util.Date
+import javax.imageio.ImageIO
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * Fix X-Ray Angiographic files for Joann Prisciandario.

@@ -16,30 +16,24 @@
 
 package edu.umro.ScalaUtil
 
+import com.pixelmed.dicom.Attribute
+import com.pixelmed.dicom.AttributeFactory
+import com.pixelmed.dicom.AttributeList
+import com.pixelmed.dicom.AttributeTag
+import com.pixelmed.dicom.FileMetaInformation
+import com.pixelmed.dicom.IntegerStringAttribute
+import com.pixelmed.dicom.OtherByteAttribute
+import com.pixelmed.dicom.SOPClass
+import com.pixelmed.dicom.TagFromName
+import com.pixelmed.dicom.TransferSyntax
+import edu.umro.DicomDict.TagByName
+import edu.umro.util.UMROGUID
+import edu.umro.util.Utility
+
 import java.io.File
 import java.io.FileInputStream
-import edu.umro.util.Utility
-import edu.umro.util.UMROGUID
-import com.pixelmed.dicom.AttributeList
-import com.pixelmed.dicom.TagFromName
-import com.pixelmed.dicom.AttributeTag
-import com.pixelmed.dicom.AttributeFactory
-import com.pixelmed.dicom.SOPClass
-import com.pixelmed.dicom.TransferSyntax
-
 import java.util.Date
-import com.pixelmed.dicom.OtherByteAttribute
-import com.pixelmed.dicom.OtherWordAttribute
-
-import java.io.FileOutputStream
-import com.pixelmed.dicom.FileMetaInformation
-import com.pixelmed.dicom.DicomDictionary
-import com.pixelmed.dicom.Attribute
-
 import scala.util.Random
-import com.pixelmed.dicom.IntegerStringAttribute
-import edu.umro.DicomDict.TagByName
-import org.slf4j.impl.StaticLoggerBinder
 
 /**
  * Convert an MHD and image file into a DICOM series.
