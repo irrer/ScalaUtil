@@ -35,3 +35,4 @@ hs_err_pid*.log
 xterm.exe.stackdump
 /bin
 /ttin/
+/.idea/libraries/
