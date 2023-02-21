@@ -58,7 +58,7 @@ object DicomGetter extends Logging {
     val evalPacs = new PACS("EVAL1109", "141.214.124.189", 104)
     val wlqaTestPacs = new PACS("WLQA_TEST", "141.214.125.209", 5682)
     val clinPacs = new PACS("VMSDBD", "10.30.65.100", 105)
-    val clinPacsX  = new PACS("VMSDBD", "10.30.65.100", 1433)
+    val clinPacsX = new PACS("VMSDBD", "10.30.65.100", 1433)
 
     val thisPacs = wlqaTestPacs
     val thatPacs = clinPacs
@@ -93,7 +93,8 @@ object DicomGetter extends Logging {
       "1.2.246.352.61.2.5555148993943369796.11639039617076347045",
       "1.2.246.352.61.2.5709758603574596911.11773304505112628904",
       "1.2.246.352.61.2.5335637450956978670.6078697464922007692",
-      "1.2.246.352.71.2.824327626427.4630938.20190821162314")
+      "1.2.246.352.71.2.824327626427.4630938.20190821162314"
+    )
 
     val seriesUidSeqPR = Seq(
       "1.2.246.352.61.2.5178694219898672721.389378833256730018",
@@ -114,11 +115,10 @@ object DicomGetter extends Logging {
       "1.2.246.352.61.2.5741855221842333841.17012404323283973308",
       "1.2.246.352.61.2.5516466383715642168.4910801812511935926",
       "1.2.246.352.61.2.4626029298599537411.8225813755205460615",
-      "1.2.246.352.61.2.5740470007493782784.11961110870271311780",
+      "1.2.246.352.61.2.5740470007493782784.11961110870271311780"
     )
 
     val seriesTX2_RTIMAGE = Seq("1.2.246.352.61.2.5114746999821828655.11474646231719155335")
-
 
     val seriesUidSeq = Seq(
       "1.2.246.352.61.2.5181765138530440586.10271888173485686166",
@@ -204,8 +204,7 @@ object DicomGetter extends Logging {
       "1.2.246.352.71.5.824327626427.666664.20190821161303",
       "1.2.246.352.71.5.824327626427.666665.20190821163000",
       "1.2.246.352.71.5.824327626427.666667.20190821171713",
-      "1.2.246.352.71.5.824327626427.666668.20190821173500",
-
+      "1.2.246.352.71.5.824327626427.666668.20190821173500"
     )
 
     val regSeriesList = Seq(
@@ -217,9 +216,8 @@ object DicomGetter extends Logging {
       "1.2.246.352.62.2.5405544414834140737.10435320682879197579",
       "1.2.246.352.62.2.5349246692312153212.6937559147488128662",
       "1.2.246.352.62.2.4648412184809110821.899346862499492009",
-      "1.2.246.352.62.2.5229480817028366757.4498713650385996467",
+      "1.2.246.352.62.2.5229480817028366757.4498713650385996467"
     )
-
 
     val July21 = Seq(
       "1.2.246.352.62.2.4876217766146919743.159007202772479673",
@@ -244,7 +242,6 @@ object DicomGetter extends Logging {
       "1.2.246.352.62.2.4648412184809110821.899346862499492009",
       "1.2.246.352.62.2.5201889237131290016.3251696867169258645",
       "1.2.246.352.62.2.5229480817028366757.4498713650385996467"
-
     )
 
     val July_Missing = Seq(
@@ -434,20 +431,20 @@ object DicomGetter extends Logging {
       "1.2.246.352.62.2.5131752932283937418.15201128309192184450",
       "1.2.246.352.62.2.4958671754008402866.4803259203621860030",
       "1.2.246.352.62.2.4696666591650352964.6913934754283096710"
-
     )
 
     val working = Seq("1.2.246.352.62.2.5035239981428730453.17224928362942256548")
 
     /**
-     * Get DICOM by SeriesInstanceUID.
-     */
+      * Get DICOM by SeriesInstanceUID.
+      */
     def fetchSeries(seriesUid: String): Unit = {
       dicomReceiver.setSubDir(seriesUid)
       val id = buildIdentifier
       val id2 = addAttr(TagFromName.SeriesInstanceUID, seriesUid, id)
       val subDir = new File(mainDir, seriesUid)
-      if (subDir.exists) try{edu.umro.util.Utility.deleteFileTree(subDir)} catch { case _ : Throwable => }
+      if (subDir.exists) try { edu.umro.util.Utility.deleteFileTree(subDir) }
+      catch { case _: Throwable => }
 
       dicomReceiver.setSubDir(subDir)
       println("Putting files into " + dicomReceiver.getSubDir.getAbsolutePath)
@@ -458,10 +455,9 @@ object DicomGetter extends Logging {
       println("elapsed ms: " + elapsed + "    Status: " + status)
     }
 
-
     /**
-     * Get DICOM by SeriesInstanceUID.
-     */
+      * Get DICOM by SeriesInstanceUID.
+      */
     def fetchPatient(patientId: String): Unit = {
       dicomReceiver.setSubDir(patientId)
       val id = buildIdentifier
@@ -483,10 +479,9 @@ object DicomGetter extends Logging {
       println("elapsed ms: " + elapsed + "    Status: " + status)
     }
 
-
     /**
-     * Get DICOM by SOPInstanceUID.
-     */
+      * Get DICOM by SOPInstanceUID.
+      */
     def fetchInstance(sopUid: String): Unit = {
       dicomReceiver.setSubDir(sopUid)
       val id = buildIdentifier
@@ -504,6 +499,7 @@ object DicomGetter extends Logging {
     }
 
     val start = System.currentTimeMillis
+
     //seriesUidSeq.map(fetchSeries)
     //sopRtplanList.map(fetchInstance)
     //seriesTX2_RTIMAGE.map(fetchSeries)
@@ -512,7 +508,8 @@ object DicomGetter extends Logging {
     //June29.foreach(fetchSeries)
     //fetchPatient("20220510")
     // fetchPatient("QASRSWLBALL2022DEC")
-    fetchInstance("1.2.246.352.71.5.427549902257.965054.20221208091924")
+    //fetchInstance("1.2.246.352.71.5.427549902257.965054.20221208091924")
+    //fetchPatient("QASRSWLBALL2022DEC")
 
     println("Done.  Elapsed ms: " + (System.currentTimeMillis - start))
     System.exit(0)
