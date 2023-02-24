@@ -185,7 +185,7 @@ object VerifyDicomIsArchived extends Logging {
     val seriesList = getSeriesList
     println("Patient List:")
     val PatientIDList = seriesList.map(s => s.get(TagFromName.PatientID).getSingleStringValueOrEmptyString).distinct.sorted
-    PatientIDList.map(p => println(p.formatted("%20s")))
+    PatientIDList.map(p => println(p.format("%20s")))
 
     PatientIDList.map(PatientID => makePatientReport(PatientID, seriesList))
 

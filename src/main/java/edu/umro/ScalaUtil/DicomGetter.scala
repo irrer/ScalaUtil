@@ -510,6 +510,7 @@ object DicomGetter extends Logging {
     // fetchPatient("QASRSWLBALL2022DEC")
     //fetchInstance("1.2.246.352.71.5.427549902257.965054.20221208091924")
     //fetchPatient("QASRSWLBALL2022DEC")
+    fetchPatient("QASRSWL8G6T2C2020")
 
     println("Done.  Elapsed ms: " + (System.currentTimeMillis - start))
     System.exit(0)

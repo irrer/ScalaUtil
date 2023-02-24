@@ -127,7 +127,7 @@ object DicomSplit extends Logging {
       val groups = list.groupBy(_.diff)
 
       def show(grp: String): String = {
-        grp.formatted("%6s") + " : " + groups(grp).size.formatted("%5d") + " : " + groups(grp).map(_.SliceLocation).sorted.mkString(" ")
+        grp.format("%6s") + " : " + groups(grp).size.formatted("%5d") + " : " + groups(grp).map(_.SliceLocation).sorted.mkString(" ")
       }
       println("Number of groups: " + groups.size + "   Groups:\n    " + groups.keys.toSeq.sorted.map(show).mkString("\n    "))
 

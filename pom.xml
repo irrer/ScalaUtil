@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>edu.umro</groupId>
     <artifactId>ScalaUtil_2.12</artifactId>
-    <version>0.0.16</version>
+    <version>0.0.17</version>
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>

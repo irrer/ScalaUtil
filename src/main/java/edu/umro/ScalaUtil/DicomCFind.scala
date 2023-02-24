@@ -293,7 +293,7 @@ object DicomCFind extends IdentifierHandler with Logging {
         //      resultList.map(r => {
         //        val m = r.get(TagFromName.Modality).getSingleStringValueOrEmptyString
         //        val s = r.get(TagFromName.SeriesInstanceUID).getSingleStringValueOrEmptyString
-        //        println(m.formatted("%-10s  ") + s)
+        //        println(m.format("%-10s  ") + s)
         //      })
 
         //println(resultList.map(r => r.toString.replace('\u0000', ' ')).mkString("\n"))

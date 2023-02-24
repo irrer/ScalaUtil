@@ -668,6 +668,55 @@ object DicomUtil {
   }
 
   /**
+    * Given an RTPLAN and an RTIMAGE, get the beam's attribute list in the RTPLAN.
+    *
+    * @param plan       RTPLAN
+    * @param BeamNumber beam number
+    * @return Beam parameters.
+    */
+  def getBeamOfRtimage(plan: AttributeList, BeamNumber: Int): Option[AttributeList] = {
+    try {
+      val beam = DicomUtil.seqToAttr(plan, TagByName.BeamSequence).find(bs => bs.get(TagByName.BeamNumber).getIntegerValues.head == BeamNumber)
+      beam
+    } catch {
+      case _: Throwable => None
+    }
+  }
+
+  /**
+    * Given an RTPLAN and an RTIMAGE, get the beam's attribute list in the RTPLAN.
+    *
+    * @param plan    RTPLAN
+    * @param rtimage RTIMAGE
+    * @return Beam parameters.
+    */
+  def getBeamOfRtimage(plan: AttributeList, rtimage: AttributeList): Option[AttributeList] = {
+    try {
+      val BeamNumber = rtimage.get(TagByName.ReferencedBeamNumber).getIntegerValues.head
+      val beam = getBeamOfRtimage(plan, BeamNumber)
+      beam
+    } catch {
+      case _: Throwable => None
+    }
+  }
+
+  /**
+    * Given an RTPLAN and an RTIMAGE, get the name of the beam that the RTIMAGE is referencing in the plan.
+    *
+    * @param plan    RTPLAN
+    * @param rtimage RTIMAGE
+    * @return Beam name.
+    */
+  def getBeamNameOfRtimage(plan: AttributeList, rtimage: AttributeList): Option[String] = {
+    try {
+      val al = getBeamOfRtimage(plan, rtimage).get
+      Some(al.get(TagByName.BeamName).getSingleStringValueOrEmptyString)
+    } catch {
+      case _: Throwable => None
+    }
+  }
+
+  /**
     * Self test.
     */
   def main(args: Array[String]): Unit = {
