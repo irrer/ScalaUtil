@@ -71,7 +71,7 @@ object DicomUtil {
     val parts = text.split('.')
 
     try {
-      val upper = dicomTimeFormatSimple.parse(parts(0))
+      val upper = Util.parseDate(dicomTimeFormatSimple, parts(0))
       val ms: Long = if (parts.length > 1) {
         val uS = (parts(1) + "000000").take(6).toDouble
         (uS / 1000).round
@@ -101,7 +101,7 @@ object DicomUtil {
           else t + ".000"
         t2.take(10)
       }
-      Some(dicomDateTimeFormat.parse(dateText + timeText))
+      Some(Util.parseDate(dicomDateTimeFormat, dateText + timeText))
     } catch {
       case _: Throwable => None
     }
