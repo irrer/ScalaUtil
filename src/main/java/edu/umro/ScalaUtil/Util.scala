@@ -27,27 +27,29 @@ import scala.xml.Elem
 import scala.xml.PrettyPrinter
 
 /**
- * Common utilities for API.
- */
+  * Common utilities for API.
+  */
 object Util {
 
+  //noinspection ScalaWeakerAccess
   def makeUID: String = {
     UUID.randomUUID.toString
   }
 
   /**
-   * System independent line separator.
-   */
+    * System independent line separator.
+    */
+  //noinspection ScalaWeakerAccess
   val LS: String = System.getProperty("line.separator")
 
   def xmlToText(document: Elem): String = new PrettyPrinter(1024, 2).format(document)
 
   /**
-   * Format a <code>Throwable</code>.
-   *
-   * @param throwable Contains description and stack trace.
-   * @return Human readable version of <code>Throwable</code> and stack trace.
-   */
+    * Format a <code>Throwable</code>.
+    *
+    * @param throwable Contains description and stack trace.
+    * @return Human readable version of <code>Throwable</code> and stack trace.
+    */
   def fmtEx(throwable: Throwable): String = {
     throwable.getStackTrace.toList.foldLeft("")((_, stkElem) => "\n    " + stkElem)
   }
@@ -55,32 +57,33 @@ object Util {
   // To be used as a lock for date formatting and parsing.
   private val dateSync = ""
 
+  /**
+    * Format a date in a thread safe way.  Note that the entire application has to use this or threads could
+    * interfere with each other.  This is just a thread-safe wrapper for the standard function.
+    *
+    * @param format Specifies format.
+    * @param date   The date to format.
+    * @return Date formatted as string.
+    */
+  //noinspection ScalaUnusedSymbol
+  def formatDate(format: SimpleDateFormat, date: Date): String =
+    dateSync.synchronized {
+      format.format(date)
+    }
 
   /**
-   * Format a date in a thread safe way.  Note that the entire application has to use this or threads could
-   * interfere with each other.  This is just a thread-safe wrapper for the standard function.
-   *
-   * @param format Specifies format.
-   * @param date   The date to format.
-   * @return Date formatted as string.
-   */
-  def formatDate(format: SimpleDateFormat, date: Date): String = dateSync.synchronized {
-    format.format(date)
-  }
-
-  /**
-   * Parse a date in a thread safe way.  Note that the entire application has to use this or threads could
-   * interfere with each other.  This is just a thread-safe wrapper for the standard function.
-   *
-   * @param format Specifies format.
-   * @param text   The formatted date to format.
-   * @return Date formatted as string.
-   */
+    * Parse a date in a thread safe way.  Note that the entire application has to use this or threads could
+    * interfere with each other.  This is just a thread-safe wrapper for the standard function.
+    *
+    * @param format Specifies format.
+    * @param text   The formatted date to format.
+    * @return Date formatted as string.
+    */
   @throws[ParseException]
-  def parseDate(format: SimpleDateFormat, text: String): Date = dateSync.synchronized {
-    format.parse(text)
-  }
-
+  def parseDate(format: SimpleDateFormat, text: String): Date =
+    dateSync.synchronized {
+      format.parse(text)
+    }
 
   //noinspection SpellCheckingInspection
   private val standardDateFormatList = List(
@@ -88,12 +91,16 @@ object Util {
     new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX"),
     new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS"),
     new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss"),
-    new SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss"))
+    new SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss")
+  )
 
+  //noinspection ScalaWeakerAccess
   def dateToText(date: Date): String = standardDateFormatList.head.format(date)
 
+  //noinspection ScalaUnusedSymbol
   def standardFormat(date: Date): String = dateToText(date)
 
+  //noinspection ScalaUnusedSymbol
   def textToDate(text: String): Date = {
     val maxTextLength = 23
     val t = if (text.length > maxTextLength) text.substring(0, maxTextLength) else text
@@ -116,8 +123,9 @@ object Util {
   private val justDate = new SimpleDateFormat("yyyy-MM-dd")
 
   /**
-   * Round off the given date+time to just date, e.g. Jan 24 1956 15:24:56 --> Jan 24 1956 00:00:00
-   */
+    * Round off the given date+time to just date, e.g. Jan 24 1956 15:24:56 --> Jan 24 1956 00:00:00
+    */
+  //noinspection ScalaUnusedSymbol
   def roundToDate(date: Date): Date = justDate.parse(justDate.format(date))
 
   private val elapsedFormatHours = new SimpleDateFormat("HH:mm:ss")
@@ -125,12 +133,13 @@ object Util {
   private val elapsedFormatSeconds = new SimpleDateFormat("s.SSS")
 
   /**
-   * Format time interval into a user friendly format.  Show more or less precision depending on
-   * the size of <code>time</code>.
-   *
-   * @param interval Interval in ms.
-   * @return Formatted as text.
-   */
+    * Format time interval into a user friendly format.  Show more or less precision depending on
+    * the size of <code>time</code>.
+    *
+    * @param interval Interval in ms.
+    * @return Formatted as text.
+    */
+  //noinspection ScalaUnusedSymbol
   def intervalTimeUserFriendly(interval: Long): String = {
     val intervalMs = interval.abs
     val fmt =
@@ -148,10 +157,10 @@ object Util {
       text
   }
 
-
   /**
-   * Given a list, group them into smaller groups of a given size.  The last group in the list may be smaller than the others.
-   */
+    * Given a list, group them into smaller groups of a given size.  The last group in the list may be smaller than the others.
+    */
+  //noinspection ScalaUnusedSymbol
   def sizedGroups[T](seq: Seq[T], groupSize: Int): Seq[Seq[T]] = {
     val gs = Math.max(groupSize, 1)
 
@@ -164,6 +173,7 @@ object Util {
     addGroup(seq, Seq[Seq[T]]())
   }
 
+  //noinspection ScalaWeakerAccess
   def getJarFile(any: Any): Option[File] = {
     try {
       val clazz = any.getClass
@@ -179,14 +189,15 @@ object Util {
   }
 
   /**
-   * Geh the properties from the file in the given path in the jar of the given class.
-   *
-   * @param classy Class that is in the related jar file.
-   *               *
-   * @param path   Path within the jar file where the property file resides.
-   *               *
-   * @return Either a set of properties or, if anything went wrong, nothing.
-   */
+    * Geh the properties from the file in the given path in the jar of the given class.
+    *
+    * @param classy Class that is in the related jar file.
+    *               *
+    * @param path   Path within the jar file where the property file resides.
+    *               *
+    * @return Either a set of properties or, if anything went wrong, nothing.
+    */
+  //noinspection ScalaWeakerAccess
   def getJarPropertyFile(classy: java.lang.Class[_], path: String = "/manifest.properties"): Option[Properties] = {
     try {
       val p = new Properties
@@ -198,12 +209,20 @@ object Util {
     }
   }
 
+  /**
+    * Convert an interval in days to ms.
+    *
+    * @param days An interval in days.
+    * @return The equivalent interval in ms.
+    */
+  //noinspection ScalaUnusedSymbol
+  def daysToMs(days: Double): Long = (days * 24 * 60 * 60 * 1000.0).round
+
   /** For testing only. */
   def main(args: Array[String]): Unit = {
     println("Properties: " + getJarPropertyFile(LS.getClass))
 
     println("uuid: " + makeUID)
-
 
     class Foo {}
     val foo = new Foo

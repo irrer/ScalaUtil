@@ -515,7 +515,8 @@ object DicomGetter extends Logging {
     //fetchPatient("$TX6_MQA_2022Q4")
     //fetchPatient("$TX6_MQA_2023Q1")
     //fetchPatient("$TX6_SNC_2022Q4")
-    fetchPatient("20220510")
+    //fetchPatient("20220510")
+    fetchInstance("1.2.246.352.71.5.427549902257.988074.20230309091532")
 
     println("Done.  Elapsed ms: " + (System.currentTimeMillis - start))
     System.exit(0)
