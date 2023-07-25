@@ -6,6 +6,59 @@ package edu.umro.ScalaUtil
 object Stats {
 
   /**
+    * Calculate the first quartile of a list of values.
+    * @param list Unordered list of values.
+    * @return First quartile.
+    */
+  //noinspection ScalaWeakerAccess
+  def quartile1(list: Seq[Double]): Double = {
+    val sorted = list.sorted
+    val size = list.size
+
+    def q1: Double = {
+      val i = size / 4
+      size % 4 match {
+        case 0 =>
+          (sorted(i) - sorted(i - 1)) * .75 + sorted(i - 1)
+        case 1 =>
+          sorted(i)
+        case 2 =>
+          (sorted(i + 1) - sorted(i)) * .25 + sorted(i)
+        case 3 =>
+          (sorted(i + 1) - sorted(i)) * .5 + sorted(i)
+      }
+    }
+    q1
+  }
+
+  /**
+    * Calculate the third quartile of a list of values.
+    *
+    * @param list Unordered list of values.
+    * @return Third quartile.
+    */
+  //noinspection ScalaWeakerAccess
+  def quartile3(list: Seq[Double]): Double = {
+    val sorted = list.sorted
+    val size = list.size
+
+    def q3: Double = {
+      val i = (size * 3) / 4
+      size % 4 match {
+        case 0 =>
+          (sorted(i) - sorted(i - 1)) * .25 + sorted(i - 1)
+        case 1 =>
+          sorted(i)
+        case 2 =>
+          (sorted(i) - sorted(i - 1)) * .75 + sorted(i - 1)
+        case 3 =>
+          (sorted(i) - sorted(i - 1)) * .5 + sorted(i - 1)
+      }
+    }
+    q3
+  }
+
+  /**
     * Calculate the median ('middle') value of a list.
     *
     * Interactive page: https://www.w3schools.com/python/trypython.asp?filename=demo_ref_stat_median
@@ -80,7 +133,7 @@ object Stats {
     val iqr = size match {
       case 0 => Double.NaN // handle special case of empty list
       case 1 => 0.0 // handle special case of list with size 1
-      case _ => q3 - q1
+      case _ => quartile3(list) - quartile1(list)
     }
     // println(s"q1: $q1    q3: $q3   iqr: $iqr")
     iqr
@@ -102,21 +155,21 @@ object Stats {
       println
     }
 
-    if (false) {
+    if (true) {
       show(Seq())
       show(Seq(0.0))
       show(Seq(13.0))
       show(Seq(13.0, 21.0))
       show(Seq(13.0, 21.0, 85.0))
     }
-    if (false) {
+    if (true) {
       show(Seq(1.0, 2.0, 3.0, 4.0, 7.0, 10.0, 12.0, 14.0, 17.0, 19.0, 20.0))
       show(Seq(1.0, 2.0, 3.0, 4.0, 7.0, 10.0, 12.0, 14.0, 17.0, 19.0, 20.0, 25.0))
       show(Seq(1.0, 2.0, 3.0, 4.0, 7.0, 10.0, 12.0, 14.0, 17.0, 19.0, 20.0, 25.0, 27.0))
       show(Seq(1.0, 2.0, 3.0, 4.0, 7.0, 10.0, 12.0, 14.0, 17.0, 19.0, 20.0, 25.0, 27.0, 33.0))
     }
 
-    if (false) {
+    if (true) {
       for (i <- 0 until 10) {
         val seq = (0 to i + 8).map(_ => scala.util.Random.nextDouble() * 100)
         show(seq)
