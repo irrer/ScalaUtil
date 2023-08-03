@@ -17,7 +17,7 @@ object SectraFix {
   private val dir = new File("""D:\tmp\scott\original\0000D8BF""")
   private val outDir = new File("""D:\tmp\scott\fixed\0000D8BF""")
 
-  private val PhaseNumberTag = TagByName.dict.getTagFromName("PhaseNumber")
+  private val PhaseNumberTag = TagByName.PhaseNumber
 
   private def readFile(file: File): AttributeList = {
     val al = new AttributeList
