@@ -17,28 +17,28 @@
 package edu.umro.ScalaUtil.DicomSort
 
 import com.pixelmed.dicom.AttributeList
-import com.pixelmed.dicom.TagFromName
+import edu.umro.DicomDict.TagByName
 
 import java.io.File
-import java.text.SimpleDateFormat
 import java.util.Date
-
 
 case class Study(StudyInstanceUID: String) {
   private val seriesList = scala.collection.mutable.Map[String, Series]()
+
+  val uniqueId: Int = TreeUtil.uniqueInt()
 
   private var studyDescription: Option[String] = None
 
   def getDescription: Option[String] = studyDescription
 
   /**
-   * If there is a study description, then save it.
-   *
-   * @param al Look here for description.
-   */
+    * If there is a study description, then save it.
+    *
+    * @param al Look here for description.
+    */
   private def setDescription(al: AttributeList): Unit = {
     if (studyDescription.isEmpty) {
-      val at = al.get(TagFromName.StudyDescription)
+      val at = al.get(TagByName.StudyDescription)
       if (at != null) {
         val text = at.getSingleStringValueOrNull
         if ((text != null) && text.trim.nonEmpty) studyDescription = Some(text)
@@ -47,36 +47,31 @@ case class Study(StudyInstanceUID: String) {
   }
 
   /**
-   * Add a file by putting the related information into the data structures.
-   *
-   * @param file File to add
-   * @param al   Attribute list reflecting contents of file.
-   */
+    * Add a file by putting the related information into the data structures.
+    *
+    * @param file File to add
+    * @param al   Attribute list reflecting contents of file.
+    */
   def add(file: File, al: AttributeList): Unit = {
     setDescription(al)
-    val SeriesInstanceUID = TreeUtil.getAttr(al, TagFromName.SeriesInstanceUID)
-    if (!seriesList.contains(SeriesInstanceUID)) seriesList.put(SeriesInstanceUID, Series(SeriesInstanceUID, TreeUtil.getAttr(al, TagFromName.Modality)))
+    val SeriesInstanceUID = TreeUtil.getAttr(al, TagByName.SeriesInstanceUID)
+    if (!seriesList.contains(SeriesInstanceUID)) seriesList.put(SeriesInstanceUID, Series(SeriesInstanceUID, TreeUtil.getAttr(al, TagByName.Modality)))
     seriesList(SeriesInstanceUID).add(file, al)
   }
 
-
   /**
-   * Get date of study, which is the minimum date of all of the seres in the study.
-   *
-   * @return Earliest date.
-   */
+    * Get date of study, which is the minimum date of all of the seres in the study.
+    *
+    * @return Earliest date.
+    */
   def dateOf: Date = seriesList.values.map(s => s.dateOf()).minBy(d => d.getTime)
 
-
   /**
-   * Move series in this study.
-   *
-   * @param parentDir Put files under this directory.
-   */
-  def move(parentDir: File, parentDateTimeFormat: SimpleDateFormat): Unit = {
-    def dirNameOf(series: Series): String = {
-      parentDateTimeFormat.format(series.dateOf()) + "_" + series.Modality
-    }
+    * Move series in this study.
+    *
+    * @param parentDir Put files under this directory.
+    */
+  def move(parentDir: File): Unit = {
 
     val dateFormat = TreeUtil.dateTimeFormat(seriesList.values.map(s => s.dateOf()))
     seriesList.values.foreach(s => s.move(parentDir, dateFormat))
@@ -87,8 +82,7 @@ case class Study(StudyInstanceUID: String) {
     else {
       seriesList.values.head.move(parentDir, parentDateTimeFormat)
     }
-      */
+     */
   }
 
 }
-

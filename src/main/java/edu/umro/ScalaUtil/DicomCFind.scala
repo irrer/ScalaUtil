@@ -235,7 +235,8 @@ object DicomCFind extends IdentifierHandler with Logging {
     //putValue("BR1_2022_OBIQA", TagFromName.PatientID)  // fail
     //               123456789.123456789.123456789.
     //putValue("BR1_OBI_QA_2023_Q1", TagFromName.PatientID)  // fail
-    putValue("*R1_OBI_QA_2023_*", TagFromName.PatientID) // success
+    // putValue("*R1_OBI_QA_2023_*", TagFromName.PatientID) // success
+    putValue("$TB3_OBI_2023Q1", TagFromName.PatientID) // success
     //putValue("*R1_OBI_QA_2023_*Q1", TagFromName.PatientID) // success
     //putValue("$2357LONG_PATIENT_ID_ABCD", TagFromName.PatientID) // success
     //putValue("*NT_ID_ABCD", TagFromName.PatientID) // success
@@ -255,7 +256,7 @@ object DicomCFind extends IdentifierHandler with Logging {
     //put(TagFromName.Modality)
     //putValue("REG", TagFromName.Modality)
     putValue("RTIMAGE", TagFromName.Modality)
-    put(TagFromName.SeriesDate)
+    putValue("20230901", TagFromName.SeriesDate)
     put(TagFromName.SeriesTime)
     put(TagFromName.StudyDate)
     put(TagFromName.StudyTime)
@@ -268,11 +269,12 @@ object DicomCFind extends IdentifierHandler with Logging {
     put(TagFromName.SeriesInstanceUID)
     put(TagFromName.AcquisitionDate)
     put(TagFromName.AcquisitionTime)
+
     //putValue("1.2.246.352.61.2.5649017917321910891.9616106119503134379", TagFromName.SeriesInstanceUID)
 
     //put(TagFromName.Modality)
 
-    println("query:\n--------------------------------\n" + al.toString.replace('\u0000', ' ') + "--------------------------------")
+    println(s"query:\n--------------------------------\ni${DicomUtil.attributeListToString(al)}\n--------------------------------")
 
     //for (qrl <- QueryRetrieveLevel.values; qrim <- QueryRetrieveInformationModel.values) {
     //for (qrl <- Seq(QueryRetrieveLevel.IMAGE, QueryRetrieveLevel.SERIES, QueryRetrieveLevel.STUDY); qrim <- Seq(QueryRetrieveInformationModel.StudyRoot, QueryRetrieveInformationModel.PatientRoot)) {
@@ -289,6 +291,7 @@ object DicomCFind extends IdentifierHandler with Logging {
       )
       if (resultList.nonEmpty) {
         println("query level: " + qrl + "    query retrieve info model: " + qrim)
+        println(s"First result:\n${DicomUtil.attributeListToString(resultList.head)}\n")
 
         //      resultList.map(r => {
         //        val m = r.get(TagFromName.Modality).getSingleStringValueOrEmptyString

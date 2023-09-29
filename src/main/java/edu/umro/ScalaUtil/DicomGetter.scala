@@ -46,7 +46,7 @@ object DicomGetter extends Logging {
   def main(args: Array[String]): Unit = {
 
     //val mainDirName = """D:\tmp\aqa\tmp\May9_TX4"""
-    val mainDirName = """D:\tmp\aqa\tmp\getter"""
+    val mainDirName = """D:\tmp\getter"""
 
     val mainDir = new File(mainDirName)
     println("Putting files in: " + mainDir.getAbsolutePath)
@@ -506,17 +506,15 @@ object DicomGetter extends Logging {
     //regSeriesList.map(fetchSeries)
     //July_Missing.foreach(fetchSeries)
     //June29.foreach(fetchSeries)
-    //fetchPatient("QASRSWLBALL2022DEC")
     //fetchInstance("1.2.246.352.71.5.427549902257.965054.20221208091924")
     //fetchInstance("1.2.246.352.71.5.427549902257.988074.20230309091532")
-    //fetchPatient("QASRSWLBALL2022DEC")
     //fetchSeries("1.2.246.352.62.2.5445197171905295596.5311973410070803857")
     //fetchPatient("$TX6_SNC_2023Q2")
     //fetchPatient("$TX6_MQA_2022Q4")
     //fetchPatient("$TX6_MQA_2023Q1")
     //fetchPatient("$TX6_SNC_2022Q4")
-    //fetchPatient("20220510")
-    fetchInstance("1.2.246.352.71.5.427549902257.988074.20230309091532")
+    //fetchSeries("1.3.6.1.4.1.22361.39299035592764.985551397.1383161960366.372")
+    fetchPatient("QASRSWL1")
 
     println("Done.  Elapsed ms: " + (System.currentTimeMillis - start))
     System.exit(0)

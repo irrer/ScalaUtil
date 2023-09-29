@@ -22,7 +22,6 @@ import edu.umro.util.UMROGUID
 import com.pixelmed.dicom.AttributeList
 import com.pixelmed.dicom.TagFromName
 import edu.umro.DicomDict.TagByName
-import edu.umro.ScalaUtil.Logging
 import com.pixelmed.dicom.AttributeTag
 import com.pixelmed.dicom.TransferSyntax
 import java.util.Date

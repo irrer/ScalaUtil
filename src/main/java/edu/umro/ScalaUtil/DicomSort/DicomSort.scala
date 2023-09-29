@@ -16,7 +16,7 @@
 
 package edu.umro.ScalaUtil.DicomSort
 
-import com.pixelmed.dicom.TagFromName
+import edu.umro.DicomDict.TagByName
 import edu.umro.ScalaUtil.FileUtil
 
 import java.io.File
@@ -26,46 +26,44 @@ object DicomSort {
   /** When creating a single DICOM file, use this as a suffix. */
   val dicomFileSuffix = ".dcm"
 
-
   /** Maximum number of characters to use for descriptions.  They can be hundreds of characters, which
-   * makes unreasonably long file names.
-   */
+    * makes unreasonably long file names.
+    */
 
   /** Maximum number of characters for study descriptions. */
   val maxStudyDescriptionSize = 50
 
-
   /** Maximum number of characters for series descriptions. */
   val maxSeriesDescriptionSize = 30
 
+  var fileCount = 0
 
   /**
-   * Add the references of the given file to the data structures.
-   *
-   * @param file Read this file.
-   */
+    * Add the references of the given file to the data structures.
+    *
+    * @param file Read this file.
+    */
   private def addFile(file: File): Unit = {
     try {
       TreeUtil.readFile(file) match {
         case Some(al) =>
           print(".")
-          val PatientID = TreeUtil.getAttr(al, TagFromName.PatientID)
+          fileCount = fileCount + 1
+          val PatientID = TreeUtil.getAttr(al, TagByName.PatientID)
           if (!PatientMap.contains(PatientID)) PatientMap.put(PatientID, Patient(PatientID))
           PatientMap.get(PatientID).add(file, al)
         case _ =>
       }
-    }
-    catch {
+    } catch {
       case _: Throwable => println("Can not read file " + file.getAbsolutePath + " as DICOM.  File ignored.")
     }
   }
 
-
   /**
-   * Crawl the file tree, adding any DICOM files to the data structures.
-   *
-   * @param file File in input tree.
-   */
+    * Crawl the file tree, adding any DICOM files to the data structures.
+    *
+    * @param file File in input tree.
+    */
   private def addFilesInTree(file: File): Unit = {
     if (file.isDirectory)
       TreeUtil.listFilesSafely(file).foreach(f => addFilesInTree(f))
@@ -73,12 +71,11 @@ object DicomSort {
       addFile(file)
   }
 
-
   /**
-   * Crawl the file tree, deleting any empty directories.
-   *
-   * @param file File in input tree.
-   */
+    * Crawl the file tree, deleting any empty directories.
+    *
+    * @param file File in input tree.
+    */
   private def deleteFilesInTree(file: File): Unit = {
     if (file.isDirectory) {
       TreeUtil.listFilesSafely(file).foreach(f => deleteFilesInTree(f))
@@ -87,12 +84,11 @@ object DicomSort {
     }
   }
 
-
   /**
-   * Main entry point of application.  Check args and start processing.
-   *
-   * @param args Input dir and, optionally, output dir.
-   */
+    * Main entry point of application.  Check args and start processing.
+    *
+    * @param args Input dir and, optionally, output dir.
+    */
   def main(args: Array[String]): Unit = {
     try {
       val start = System.currentTimeMillis
@@ -106,8 +102,7 @@ object DicomSort {
       val outDir = {
         if (args.length == 2) {
           new File(args(1))
-        }
-        else {
+        } else {
           val outName = inDir.getName + "output"
           new File(inDir.getParentFile, outName)
         }
@@ -124,8 +119,7 @@ object DicomSort {
       deleteFilesInTree(inDir)
 
       println("\nDone.  Elapsed ms: " + (System.currentTimeMillis - start))
-    }
-    catch {
+    } catch {
       case t: Throwable =>
         t.printStackTrace()
     }
