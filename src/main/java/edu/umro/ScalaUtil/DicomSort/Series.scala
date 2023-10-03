@@ -104,22 +104,31 @@ case class Series(SeriesInstanceUID: String, Modality: String) {
     */
   def move(parentDir: File, parentDateFormat: SimpleDateFormat): Unit = {
 
+    val dateFormat = TreeUtil.dateTimeFormat(dicomFileList.map(_._2.date))
+    parentDir.mkdirs()
+
     if (dicomFileList.size == 1) {
       // There is only one file in this series, so do not create an extra directory
       // level.  Just put the DICOM file directly in the parent dir.
 
-      val fileName = {
+      val newFile = {
         val base =
-          parentDateFormat.format(dateOf()) + "_" +
+          dateFormat.format(dateOf()) + "_" +
             Modality + "_" +
             TreeUtil.forToString(forList()) + dicomFileList.values.head.getSpecialName
 
         //noinspection RegExpSimplifiable
         val trimmed = base.replaceAll("___*", "_").replaceAll("^_", "").replaceAll("_$", "")
 
-        trimmed + "-" + TreeUtil.uniqueInt() + DicomSort.dicomFileSuffix
+        val name = trimmed + DicomSort.dicomFileSuffix
+        val f = new File(parentDir, name)
+        if (f.exists()) {
+          val n = trimmed + "-" + uniqueId + DicomSort.dicomFileSuffix
+          new File(parentDir, n)
+        } else
+          f
       }
-      val newFile = new File(parentDir, fileName)
+
       TreeUtil.renameFile(dicomFileList.values.head.sourceFile, newFile)
     } else {
       // There are multiple DICOM files in this series, so create a series directory and put the DICOM files in it.
@@ -136,11 +145,19 @@ case class Series(SeriesInstanceUID: String, Modality: String) {
         TreeUtil.forToString(forList)
       }
 
-      val seriesDir = new File(parentDir, parentDateFormat.format(dateOf()) + "_" + Modality + dicomFileList.size + forText + desc + "-" + uniqueId)
-      seriesDir.mkdirs()
+      // Create the series dir.  Add a unique suffix if necessary.
+      val seriesDir = {
+        val name = dateFormat.format(dateOf()) + "_" + Modality + dicomFileList.size + forText + desc
+        val dir = new File(parentDir, name)
+        if (dir.exists())
+          new File(parentDir, name + "-" + uniqueId)
+        else
+          dir
+      }
+      seriesDir.mkdir()
 
       def moveFile(df: DicomFile, index: Int): Unit = {
-        val fileName = Modality + "_" + (index + 1).formatted(indexFormat) + df.getSpecialName + "-" + uniqueId.formatted(indexFormat) + DicomSort.dicomFileSuffix
+        val fileName = Modality + "_" + (index + 1).formatted(indexFormat) + df.getSpecialName + DicomSort.dicomFileSuffix
         val newFile = new File(seriesDir, fileName)
         TreeUtil.renameFile(df.sourceFile, newFile)
       }

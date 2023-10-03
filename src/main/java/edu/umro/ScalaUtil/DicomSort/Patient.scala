@@ -24,6 +24,8 @@ import java.io.File
 case class Patient(PatientID: String) {
   private val studyList = scala.collection.mutable.Map[String, Study]()
 
+  def getStudyList: Map[String, Study] = studyList.toMap
+
   /**
     * Add a file by putting the related information into the data structures.
     *

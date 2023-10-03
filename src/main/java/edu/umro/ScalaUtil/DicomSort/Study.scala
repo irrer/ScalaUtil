@@ -24,6 +24,7 @@ import java.util.Date
 
 case class Study(StudyInstanceUID: String) {
   private val seriesList = scala.collection.mutable.Map[String, Series]()
+  def getSeriesList: Map[String, Series] = seriesList.toMap
 
   val uniqueId: Int = TreeUtil.uniqueInt()
 

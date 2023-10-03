@@ -85,6 +85,20 @@ object DicomSort {
   }
 
   /**
+    * Show the user some statistics about the files read.
+    */
+  private def showStats(): Unit = {
+    val studyList = PatientMap.values.flatMap(p => p.getStudyList.values)
+    val seriesList = studyList.flatMap(study => study.getSeriesList.values)
+    val numFile = seriesList.map(_.size()).sum
+
+    println(s"\nNumber of patients: ${PatientMap.size}")
+    println(s"Number of studies: ${studyList.size}")
+    println(s"Number of series: ${seriesList.size}")
+    println(s"Number of files: $numFile")
+  }
+
+  /**
     * Main entry point of application.  Check args and start processing.
     *
     * @param args Input dir and, optionally, output dir.
@@ -109,6 +123,8 @@ object DicomSort {
       }
 
       addFilesInTree(inDir)
+
+      showStats()
 
       if (PatientMap.size < 2)
         PatientMap.values.foreach(patient => patient.move(outDir))
