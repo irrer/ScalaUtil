@@ -33,6 +33,7 @@ import com.pixelmed.dicom.SequenceAttribute
 import com.pixelmed.dicom.TagFromName
 import com.pixelmed.dicom.TransferSyntax
 import com.pixelmed.dicom.ValueRepresentation
+import edu.umro.DicomDict.ExtendedDictionary
 import edu.umro.DicomDict.TagByName
 import resource.managed
 
@@ -46,10 +47,11 @@ import java.util
 import java.util.Date
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+import scala.annotation.tailrec
 
 object DicomUtil {
 
-  val dictionary = TagByName.dict
+  val dictionary: ExtendedDictionary = TagByName.dict
 
   private val minorIndent = "  "
   private val indentText = minorIndent + minorIndent
@@ -58,10 +60,10 @@ object DicomUtil {
   val dicomDateFormat = new SimpleDateFormat("yyyyMMdd")
 
   /** DICOM compatible time format. */
-  //noinspection SpellCheckingInspection
+  //noinspection ScalaUnusedSymbol SpellCheckingInspection
   val dicomTimeFormat = new SimpleDateFormat("HHmmss.SSS")
 
-  //noinspection SpellCheckingInspection
+  //noinspection SpellCheckingInspection,ScalaWeakerAccess
   val dicomTimeFormatSimple = new SimpleDateFormat("HHmmss")
 
   /**
@@ -145,6 +147,7 @@ object DicomUtil {
   /**
     * Format an attribute tag as a string.
     */
+  //noinspection ScalaWeakerAccess
   def formatAttrTag(tag: AttributeTag): String = tag.getGroup.formatted("%04x") + "," + tag.getElement.formatted("%04x")
 
   /**
@@ -154,6 +157,7 @@ object DicomUtil {
     * Attribute to format.
     * @return String version of attribute.
     */
+  //noinspection ScalaWeakerAccess
   def attributeToString(attribute: Attribute, indentLevel: String): String = {
     val tag = attribute.getTag
     val vrDict = dictionary.getValueRepresentationFromTag(tag)
@@ -173,6 +177,7 @@ object DicomUtil {
         }
       }
 
+      @tailrec
       def makeGroups(seq: Seq[String], groupList: Seq[Group] = Seq()): Seq[Group] = {
         0 match {
           case _ if seq.isEmpty =>
@@ -258,6 +263,7 @@ object DicomUtil {
       if (text.endsWith("\n")) text.subSequence(0, text.length - 1).toString else text
     }
 
+    //noinspection TypeCheckCanBeMatch
     val valueText: String =
       if (attribute.isInstanceOf[SequenceAttribute]) {
         toSequenceAttribute(attribute.asInstanceOf[SequenceAttribute])
@@ -297,18 +303,21 @@ object DicomUtil {
     * Smith^John^Q --> John Q Smith
     */
   case class DicomPersonName(familyNameComplex: Option[String], givenNameComplex: Option[String], middleName: Option[String], namePrefix: Option[String], nameSuffix: Option[String]) {
+    //noinspection ScalaWeakerAccess
     def partToStr(part: Option[String]): String =
       if (part.isDefined) {
         part.get + " "
       } else
         ""
 
+    //noinspection RegExpSimplifiable
     override def toString: String = (partToStr(namePrefix) + partToStr(givenNameComplex) + partToStr(middleName) + partToStr(familyNameComplex) + partToStr(nameSuffix)).replaceAll("  *", " ").trim
   }
 
   /**
     * Given a person name (Value Representation PN) in DICOM format, break it down into its components.
     */
+  //noinspection ScalaUnusedSymbol
   def parseDicomPersonName(text: String): DicomPersonName = {
     val pn = text.split("\\^")
 
@@ -320,6 +329,7 @@ object DicomUtil {
   /**
     * Compare two DICOM files for the purpose of sorting them in the order that humans expect.
     */
+  //noinspection ScalaUnusedSymbol,ScalaWeakerAccess
   def compareDicom(a: AttributeList, b: AttributeList): Int = {
 
     def nullAttrCheck(tag: AttributeTag): Either[Int, (Attribute, Attribute)] = {
@@ -397,11 +407,13 @@ object DicomUtil {
   /**
     * Sort a list of DICOM attribute lists.
     */
+  //noinspection ScalaUnusedSymbol
   def sortDicom(attributeListList: Seq[AttributeList]): Seq[AttributeList] = attributeListList.sortWith((a, b) => compareDicom(a, b) <= 0)
 
   /**
     * Return true if the DICOM is an image modality.
     */
+  //noinspection ScalaUnusedSymbol
   def isImageStorage(attributeList: AttributeList): Boolean = {
     SOPClass.isImageStorage(Attribute.getSingleStringValueOrEmptyString(attributeList, TagFromName.SOPClassUID))
   }
@@ -452,7 +464,7 @@ object DicomUtil {
     * Get all instances of attributes that the caller deems interesting.
     *
     * @param attributeList to be searched.
-    * @param interesting Returns true if the attribute is interesting.
+    * @param interesting   Returns true if the attribute is interesting.
     * @return List of interesting attributes.
     */
   def findAll(attributeList: AttributeList, interesting: Attribute => Boolean): IndexedSeq[Attribute] = {
@@ -467,6 +479,19 @@ object DicomUtil {
     val listOfInterest = atList.filter(interesting)
     val all = listOfInterest ++ childSeq(attributeList).flatMap(child => findAll(child, interesting))
     all
+  }
+
+  /**
+    * Given an attribute list, return all the attribute lists under it.
+    *
+    * @param al Top of attribute list tree.
+    * @return List of attribute lists.
+    */
+  //noinspection ScalaWeakerAccess
+  def flattenAttributeList(al: AttributeList): Seq[AttributeList] = {
+    val seqList = findAll(al, _.isInstanceOf[SequenceAttribute]).map(_.asInstanceOf[SequenceAttribute])
+    val all = seqList.flatMap(sq => (0 until sq.getNumberOfItems).map(i => sq.getItem(i).getAttributeList))
+    al +: all
   }
 
   /**
@@ -543,6 +568,7 @@ object DicomUtil {
     * @param sourceApplication : Source application in DICOM header
     *
     */
+  //noinspection ScalaUnusedSymbol
   def namedDicomToZippedByteArray(alListWithNames: Seq[(AttributeList, String)], sourceApplication: String): Array[Byte] = {
 
     /**
@@ -574,6 +600,7 @@ object DicomUtil {
     * @param data Bytes representing a single DICOM object.
     * @return DICOM, or None if the content doesn't not represent a single DICOM object.
     */
+  //noinspection ScalaWeakerAccess
   def byteArrayToDicom(data: Array[Byte]): Option[AttributeList] = {
     import scala.util.Success
     import scala.util.Try
@@ -612,6 +639,7 @@ object DicomUtil {
     * @param seqAttrTag         : Tag of main SequenceAttribute
     * @param identifyForRemoval : Returns true for each attribute list that should be removed.
     */
+  //noinspection ScalaUnusedSymbol
   def removeSeq(al: AttributeList, seqAttrTag: AttributeTag, identifyForRemoval: AttributeList => Boolean): Seq[AttributeList] = {
     val listPair = DicomUtil.seqToAttr(al, seqAttrTag).partition(identifyForRemoval)
     val remove = listPair._1
@@ -661,6 +689,7 @@ object DicomUtil {
     }
   }
 
+  //noinspection ScalaUnusedSymbol
   def isHalcyon(rtplan: AttributeList): Boolean = {
     val treatmentMachineType = TreatmentMachineType.attrListToTreatmentMachineType(rtplan)
     val isHalcy = treatmentMachineType.isDefined && treatmentMachineType.get.toString.equals(TreatmentMachineType.Halcyon.toString)
@@ -707,6 +736,7 @@ object DicomUtil {
     * @param rtimage RTIMAGE
     * @return Beam name.
     */
+  //noinspection ScalaUnusedSymbol
   def getBeamNameOfRtimage(plan: AttributeList, rtimage: AttributeList): Option[String] = {
     try {
       val al = getBeamOfRtimage(plan, rtimage).get
@@ -720,6 +750,23 @@ object DicomUtil {
     * Self test.
     */
   def main(args: Array[String]): Unit = {
+
+    if (true) {
+      val file = new File("""D:\pf\IntelliJ\ws\aqa\src\main\resources\static\rtplan\rtplanPhase2Hdmlc.dcm""")
+      val al = new AttributeList
+      al.read(file)
+
+      val alList = flattenAttributeList(al)
+      println(s"Total number of attribute lists: ${alList.size}")
+
+      val text = {
+        val textList = alList.map(a => attributeListToString(a).take(140))
+        textList.mkString("\n----------\n")
+      }
+      println(text)
+      println(s"Total number of attribute lists: ${alList.size}")
+      System.exit(99)
+    }
 
     if (true) {
       val file = new File("""D:\tmp\aqa\GapSkew\dicom\GapSkewRtPlans\RP.1.2.246.352.71.5.824327626427.478933.20170215160924.dcm""")
