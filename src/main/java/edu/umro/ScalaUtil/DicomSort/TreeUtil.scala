@@ -68,6 +68,7 @@ object TreeUtil {
   private val dateTimeTagPairs = Seq(
     (TagByName.ContentDate, TagByName.ContentTime),
     (TagByName.AcquisitionDate, TagByName.AcquisitionTime),
+    (TagByName.TreatmentDate, TagByName.TreatmentTime),
     (TagByName.TreatmentControlPointDate, TagByName.TreatmentControlPointTime),
     (TagByName.SeriesDate, TagByName.SeriesTime),
     (TagByName.StudyDate, TagByName.StudyTime),
@@ -79,12 +80,17 @@ object TreeUtil {
   /**
     * Try getting a date that represents when the file was created.
     *
-    * @param al Get from this list
+    * @param attributeList Get from this list
     * @return A date that represents when the file was created.
     */
-  def getDateTime(al: AttributeList): Date = {
-    val date = dateTimeTagPairs.flatMap(dtp => DicomUtil.getTimeAndDate(al, dtp._1, dtp._2)).head
-    date
+  def getDateTime(attributeList: AttributeList): Date = {
+    val alList = DicomUtil.flattenAttributeList(attributeList)
+
+    def get(pair: (AttributeTag, AttributeTag)): Seq[Date] =
+      alList.flatMap(al => DicomUtil.getTimeAndDate(al, pair._1, pair._2))
+
+    val date = dateTimeTagPairs.flatMap(get)
+    date.head
   }
 
   /**
