@@ -285,7 +285,8 @@ object Level2Ldap {
     val msg = if (health.isDefined) "failed: " + health.get else "is healthy"
     println("LDAP health status: " + msg)
 
-    val userId = System.getProperty("user.name")
+    print("Enter user ID:")
+    val userId = scala.io.StdIn.readLine
     print("Enter Level 2 password for " + userId + " (and make sure no one is watching) : ")
     val secret = scala.io.StdIn.readLine
 
