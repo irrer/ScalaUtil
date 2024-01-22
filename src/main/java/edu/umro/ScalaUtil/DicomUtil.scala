@@ -652,6 +652,19 @@ object DicomUtil {
   }
 
   /**
+   * Removed all child attributes of the given tag that are in the sub-tree of the <code>attributeList</code>.
+   * @param attributeList Remove all that are under this.
+   * @param tag Attributes with this tag will be removed.
+   */
+  //noinspection ScalaUnusedSymbol
+  def removeAllInTree(attributeList: AttributeList, tag: AttributeTag): Unit = {
+    attributeList.remove(tag)
+    def interesting(attr: Attribute): Boolean = attr.isInstanceOf[SequenceAttribute]
+    val seqList = DicomUtil.findAll(attributeList, interesting = interesting).map(_.asInstanceOf[SequenceAttribute])
+    seqList.flatMap(DicomUtil.alOfSeq).foreach(_.remove(tag))
+  }
+
+  /**
     * Detect different types (models) of treatment machines.
     */
   object TreatmentMachineType extends Enumeration {
