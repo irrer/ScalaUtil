@@ -60,7 +60,7 @@ object DicomImageCrc {
 
       val crcText = "%016x".format(crc)
       val filePath = file.getAbsolutePath
-      println(s"$filePath : $crcText")
+      println(s"$crcText : $filePath")
 
       count = count + 1
     }
@@ -101,7 +101,7 @@ object DicomImageCrc {
         println("Create text versions of DICOM files.\nUsage: d2text myFolder myFile.dcm ... ")
       args.foreach(a => processFilesInTree(new File(a)))
       processFilesInTree(new File("""D:\tmp\aqa\GapSkew\d2"""))
-      println("\nDone.  Elapsed ms: " + (System.currentTimeMillis - start) + "    number of files written: " + count)
+      println("\nDone.  Elapsed ms: " + (System.currentTimeMillis - start) + "    number of DICOM image files: " + count)
     } catch {
       case t: Throwable =>
         t.printStackTrace()
