@@ -30,7 +30,7 @@ import java.io.File
   * A simple 64 bit CRC algorithm is used, where the accumulating value is
   * bitwise shifted left one bit, and then XOR with the new byte.
   *
-  * The <code>^</code> operator in Scala is XOR.
+  * The caret operator in Scala (upper case) is XOR.
   */
 object DicomImageCrc {
 
