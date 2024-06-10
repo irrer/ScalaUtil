@@ -26,6 +26,11 @@ import java.io.File
 
 /**
   * Create a hash of the image pixels for all given DICOM files.
+  *
+  * A simple 64 bit CRC algorithm is used, where the accumulating value is
+  * bitwise shifted left one bit, and then XOR with the new byte.
+  *
+  * The <code>^</code> operator in Scala is XOR.
   */
 object DicomImageCrc {
 
@@ -40,22 +45,22 @@ object DicomImageCrc {
   private def alToCrc(file: File, al: AttributeList): Unit = {
     val pixelData = al.get(TagByName.PixelData)
     if (pixelData != null) {
-      //val byteArray = pixelData.getShortValues()
 
       var crc: Long = 0
-      if (pixelData.isInstanceOf[OtherWordAttribute]) {
-        val shortArray = pixelData.getShortValues
-        shortArray.foreach(b => { crc = (crc << 1) + (b.toInt & 0xffff) })
-      }
 
       if (pixelData.isInstanceOf[OtherByteAttribute]) {
+        val byteArray = pixelData.getByteValues
+        byteArray.foreach(b => { crc = (crc << 1) ^ (b.toInt & 0xff) })
+      }
+
+      if (pixelData.isInstanceOf[OtherWordAttribute]) {
         val shortArray = pixelData.getShortValues
-        shortArray.foreach(b => { crc = (crc << 1) + (b.toInt & 0xffff) })
+        shortArray.foreach(b => { crc = (crc << 1) ^ (b.toInt & 0xffff) })
       }
 
       if (pixelData.isInstanceOf[OtherLongAttribute]) {
         val intArray = pixelData.getIntegerValues
-        intArray.foreach(b => { crc = (crc << 1) + (b & 0xffffffff) })
+        intArray.foreach(b => { crc = (crc << 1) ^ (b & 0xffffffff) })
       }
 
       val crcText = "%016x".format(crc)
