@@ -83,7 +83,7 @@ object DicomImageCrc {
       alToCrc(dicomFile, al)
     } catch {
       case _: Throwable =>
-        System.err.println("Unable to read file as DICOM.  Ignoring: " + dicomFile.getAbsolutePath)
+      // System.err.println("Unable to read file as DICOM.  Ignoring: " + dicomFile.getAbsolutePath)
     }
   }
 
@@ -106,7 +106,7 @@ object DicomImageCrc {
         println("Create text versions of DICOM files.\nUsage: d2text myFolder myFile.dcm ... ")
       args.foreach(a => processFilesInTree(new File(a)))
       processFilesInTree(new File("""D:\tmp\aqa\GapSkew\d2"""))
-      println("\nDone.  Elapsed ms: " + (System.currentTimeMillis - start) + "    number of DICOM image files: " + count)
+      // println("\nDone.  Elapsed ms: " + (System.currentTimeMillis - start) + "    number of DICOM image files: " + count)
     } catch {
       case t: Throwable =>
         t.printStackTrace()
