@@ -96,6 +96,14 @@ object RawByte {
   }
 
   /**
+   * Format an array of bytes as a string of hex characters.
+   * @param byteArray Bytes to format.
+   * @return
+   */
+  def formatByteArray(byteArray: Array[Byte]): String = byteArray.map(b => "%02x".format(b & 0xff)).mkString
+
+
+  /**
    * For testing only
    *
    */
