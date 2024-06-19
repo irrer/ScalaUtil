@@ -7,7 +7,6 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="ScalaUtil_2.12" />
-        <module name="ScalaUtil" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel target="8" />
