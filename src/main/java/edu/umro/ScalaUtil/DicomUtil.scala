@@ -39,6 +39,7 @@ import resource.managed
 
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.DataOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStream
@@ -652,10 +653,10 @@ object DicomUtil {
   }
 
   /**
-   * Removed all child attributes of the given tag that are in the sub-tree of the <code>attributeList</code>.
-   * @param attributeList Remove all that are under this.
-   * @param tag Attributes with this tag will be removed.
-   */
+    * Removed all child attributes of the given tag that are in the sub-tree of the <code>attributeList</code>.
+    * @param attributeList Remove all that are under this.
+    * @param tag Attributes with this tag will be removed.
+    */
   //noinspection ScalaUnusedSymbol
   def removeAllInTree(attributeList: AttributeList, tag: AttributeTag): Unit = {
     attributeList.remove(tag)
@@ -760,9 +761,60 @@ object DicomUtil {
   }
 
   /**
+    * Given DICOM image, get the pixels as bytes.
+    * @param dicomImage Pixels from this image.
+    * @return Pixels as a byte array.
+    */
+  def PixelDataToByteArray(dicomImage: AttributeList): Array[Byte] = {
+    val pixelData = dicomImage.get(TagByName.PixelData)
+
+    val byteArray: Array[Byte] = 0 match {
+      case _ if pixelData.isInstanceOf[OtherByteAttribute] =>
+        val ba = pixelData.getByteValues
+        ba
+
+      case _ if pixelData.isInstanceOf[OtherWordAttribute] =>
+        val shortValues = pixelData.getShortValues
+        val bos = new ByteArrayOutputStream()
+        val dos = new DataOutputStream(bos)
+        shortValues.foreach(v => dos.write(v))
+        dos.flush()
+        val ba = bos.toByteArray
+        ba
+
+      case _ if pixelData.isInstanceOf[OtherWordAttribute] =>
+        val intValues = pixelData.getIntegerValues
+        val bos = new ByteArrayOutputStream()
+        val dos = new DataOutputStream(bos)
+        intValues.foreach(v => dos.write(v))
+        dos.flush()
+        val ba = bos.toByteArray
+        ba
+
+    }
+
+    byteArray
+  }
+
+  /**
     * Self test.
     */
   def main(args: Array[String]): Unit = {
+
+    if (true) {
+
+      // val file = new File("""D:\aqa\FocalSpot\FocalSpot_TX4\tool\Xdev3\RTIMAGE5.dcm""")
+      // val file = new File("""C:\tmp\aqa\src\test\resources\TestCBCTAlign\CBCT_ONE_VOXEL_X202_Y212_Z82\CBCT_108.dcm""")
+      // val file = new File("""D:\pf\IntelliJ\ws\DICOMClient\src\test\resources\dicom\99999999\99999999_CT_2_0048.DCM""")
+      // val file = new File("""D:\pf\IntelliJ\ws\DICOMClient\src\test\resources\dicom\99999999\99999999_RTDOSE_214.DCM""")
+      val file = new File("""D:\pf\IntelliJ\ws\ScalaUtil\target\PhysicalDose.dcm""")
+      val al = new AttributeList
+      al.read(file)
+      val ba = PixelDataToByteArray(al)
+      Trace.trace(ba.length)
+      Trace.trace(ba.take(100).map(_ & 0xff).mkString(" "))
+      System.exit(99)
+    }
 
     if (true) {
       val file = new File("""D:\pf\IntelliJ\ws\aqa\src\main\resources\static\rtplan\rtplanPhase2Hdmlc.dcm""")
