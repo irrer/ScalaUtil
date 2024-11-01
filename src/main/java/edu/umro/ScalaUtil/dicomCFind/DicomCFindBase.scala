@@ -1,4 +1,4 @@
-package edu.umro.ScalaUtil
+package edu.umro.ScalaUtil.dicomCFind
 
 import com.pixelmed.dicom.AttributeFactory
 import com.pixelmed.dicom.AttributeList
@@ -7,6 +7,8 @@ import com.pixelmed.dicom.TagFromName
 import com.pixelmed.network.Association
 import com.pixelmed.network.FindSOPClassSCU
 import com.pixelmed.network.IdentifierHandler
+import edu.umro.ScalaUtil.Logging
+import edu.umro.ScalaUtil.PACS
 
 import java.io.Closeable
 

@@ -1,0 +1,16 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="DicomSplit" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="edu.umro.ScalaUtil.DicomSplit.DicomSplit" />
+    <module name="ScalaUtil" />
+    <option name="PROGRAM_PARAMETERS" value="D:\tmp\4DCT\toutput\2022-11-09_CT960_FOR3_Multiphaseby5% 0018,0022 split" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="edu.umro.ScalaUtil.DicomSplit.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

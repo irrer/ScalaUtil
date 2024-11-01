@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package edu.umro.ScalaUtil
+package edu.umro.ScalaUtil.dicomCFind
 
 import com.pixelmed.dicom.AttributeFactory
 import com.pixelmed.dicom.AttributeList
@@ -22,27 +22,30 @@ import com.pixelmed.dicom.AttributeTag
 import com.pixelmed.dicom.SOPClass
 import com.pixelmed.dicom.TagFromName
 import com.pixelmed.network.IdentifierHandler
+import edu.umro.ScalaUtil.DicomCliUtil
+import edu.umro.ScalaUtil.Logging
+import edu.umro.ScalaUtil.PACS
 
 /**
-  * List series for a patient.
+  * List all instances (e.g. slices or images) for a given series.
   */
 
-class DicomCFindPatient(callingAETitle: String, calledPacs: PACS, retrieveList: Seq[AttributeTag] = DicomCFindPatient.defaultRetrieveList)
+class DicomCFindInstancesForSeries(callingAETitle: String, calledPacs: PACS, retrieveList: Seq[AttributeTag] = DicomCFindInstancesForSeries.defaultRetrieveList)
     extends DicomCFindBase(callingAETitle, calledPacs, retrieveList) {
 
-  override protected val queryRetrieveInformationModel: String = SOPClass.PatientRootQueryRetrieveInformationModelFind
-  override protected val queryRetrieveLevel: String = "PATIENT"
+  override protected val queryRetrieveInformationModel: String = SOPClass.StudyRootQueryRetrieveInformationModelFind
+  override protected val queryRetrieveLevel: String = "IMAGE"
 
   /**
     * Simplified version tailored to use SeriesInstanceUID
-    * @param PatientID Only get series for this patient.  This may optionally contain wildcard characters, e.g. 1005*23
+    * @param SeriesInstanceUID For this series.
     * @return List of series.
     */
-  def findByPatient(PatientID: String): Seq[AttributeList] = {
+  def findBySeriesInstanceUID(SeriesInstanceUID: String): Seq[AttributeList] = {
     val al = new AttributeList
 
-    val serUidAttr = AttributeFactory.newAttribute(TagFromName.PatientID)
-    serUidAttr.addValue(PatientID)
+    val serUidAttr = AttributeFactory.newAttribute(TagFromName.SeriesInstanceUID)
+    serUidAttr.addValue(SeriesInstanceUID)
     al.put(serUidAttr)
 
     super.find(al)
@@ -50,18 +53,28 @@ class DicomCFindPatient(callingAETitle: String, calledPacs: PACS, retrieveList: 
 
 }
 
-object DicomCFindPatient extends IdentifierHandler with Logging {
+private object DicomCFindInstancesForSeries extends IdentifierHandler with Logging {
 
   /**
     * Default list of tags to retrieve.  The called PACS may or may not return these, depending on
     * whether it supports it.  See the conformance statement for the PACS for details.
     */
   private val defaultRetrieveList: Seq[AttributeTag] = Seq(
-    TagFromName.InstitutionName,
+    TagFromName.InstanceCreationDate,
+    TagFromName.InstanceCreationTime,
+    TagFromName.SOPInstanceUID,
+    TagFromName.AcquisitionDate,
+    TagFromName.ContentDate,
+    TagFromName.AcquisitionTime,
+    TagFromName.ContentTime,
+    TagFromName.Modality,
     TagFromName.PatientName,
-    TagFromName.PatientBirthDate,
-    TagFromName.PatientBirthTime,
-    TagFromName.OtherPatientIDs
+    TagFromName.PatientID,
+    TagFromName.PatientPosition,
+    TagFromName.SeriesInstanceUID,
+    TagFromName.InstanceNumber,
+    TagFromName.SeriesDate,
+    TagFromName.SeriesTime
   )
 
   // ----------------------------------------------------------------------------------------------------
@@ -82,22 +95,23 @@ object DicomCFindPatient extends IdentifierHandler with Logging {
     else {
       val cl = commandLine.get
 
-      val cFind = new DicomCFindPatient(getClientAETitle(cl), getServerPACS(cl))
+      val cFind = new DicomCFindInstancesForSeries(getClientAETitle(cl), getServerPACS(cl))
 
-      def findPatientData(PatientID: String): Unit = {
-        val result = cFind.findByPatient(PatientID)
+      def findSeriesData(SeriesInstanceUID: String): Unit = {
+        val result = cFind.findBySeriesInstanceUID(SeriesInstanceUID)
         val text = findResultToText(result)
-        println("\n----------------------------------------------------------------------------------------------------")
-        println(s"PatientID: $PatientID    Number of results: ${result.size}\n$text")
+        println("\n")
+        println(s"SeriesInstanceUID: $SeriesInstanceUID    Number of results: ${result.size}\n$text")
       }
 
-      val patientIdList = cl.getArgs
+      val seriesUidList = cl.getArgs
 
-      if (patientIdList.isEmpty)
+      if (seriesUidList.isEmpty)
         showHelp(options)
       else
-        patientIdList.foreach(findPatientData)
-    }
+        seriesUidList.foreach(findSeriesData)
 
+    }
   }
+
 }

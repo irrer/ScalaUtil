@@ -14,22 +14,22 @@
  * limitations under the License.
  */
 
-package test.java
+package test.java.dicomCFind
 
 import com.pixelmed.dicom.Attribute
 import com.pixelmed.dicom.AttributeList
 import com.pixelmed.dicom.TagFromName
 import com.pixelmed.network.IdentifierHandler
-import edu.umro.ScalaUtil.DicomCFindSeriesForPatient
 import edu.umro.ScalaUtil.DicomUtil
 import edu.umro.ScalaUtil.Logging
 import edu.umro.ScalaUtil.PACS
+import edu.umro.ScalaUtil.dicomCFind.DicomCFindPatient
 
 /**
   * Test DicomCFindSeriesForPatient
   */
 
-object DicomCFindSeriesForPatientTest extends IdentifierHandler with Logging {
+object DicomCFindPatientTest extends IdentifierHandler with Logging {
 
   private def al2Human(result: AttributeList): String = {
 
@@ -75,14 +75,14 @@ object DicomCFindSeriesForPatientTest extends IdentifierHandler with Logging {
       if (args.nonEmpty)
         args.head
       else
-        "$AQA_TB3"
+        "$AQA_*"
 
     val startSingle = System.currentTimeMillis
 
     val callingAETitle = "IRRER"
     val calledPacs = new PACS("VMSDBD", "10.30.65.100", 105)
 
-    val rec = new DicomCFindSeriesForPatient(callingAETitle, calledPacs)
+    val rec = new DicomCFindPatient(callingAETitle, calledPacs)
 
     // ----------------------------------------------------------------------------------------
 
@@ -105,11 +105,10 @@ object DicomCFindSeriesForPatientTest extends IdentifierHandler with Logging {
     // test single find with Modality specified.
 
     if (true) {
-      val Modality = "RTPLAN"
-      val resultList = rec.findByPatient(PatientID, Some(Modality))
+      val resultList = rec.findByPatient(PatientID)
 
       val elapsedSingle = System.currentTimeMillis - startSingle
-      println(s"Done with single find with $Modality.  Elapsed time in ms: $elapsedSingle    Number of results: ${resultList.size}")
+      println(s"Done with single find with $PatientID.  Elapsed time in ms: $elapsedSingle    Number of results: ${resultList.size}")
 
       showResultList(resultList)
 
