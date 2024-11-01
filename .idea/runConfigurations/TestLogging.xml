@@ -4,7 +4,7 @@
     <module name="ScalaUtil" />
     <extension name="coverage">
       <pattern>
-        <option name="PATTERN" value="test.java.*" />
+        <option name="PATTERN" value="test.java.dicomCFind.*" />
         <option name="ENABLED" value="true" />
       </pattern>
     </extension>
