@@ -11,10 +11,13 @@ import org.apache.commons.cli.HelpFormatter
 import org.apache.commons.cli.Option
 import org.apache.commons.cli.Options
 
+/**
+  * Provide support for processing common command line options.
+  */
 object DicomCliUtil {
 
   private val optionClient = new Option("c", "client", true, "AE title of the client (this program).")
-  private val optionServerAETitle = new Option("s", "client", true, "AE title of the server.")
+  private val optionServerAETitle = new Option("s", "server", true, "AE title of the server.")
   private val optionHost = new Option("h", "host", true, "Host name or IP address of server.")
   private val optionPort = new Option("p", "port", true, "DICOM Port number on server.")
 
