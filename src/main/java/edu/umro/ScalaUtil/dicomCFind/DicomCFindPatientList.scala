@@ -27,10 +27,10 @@ import edu.umro.ScalaUtil.Logging
 import edu.umro.ScalaUtil.PACS
 
 /**
-  * List series for a patient.
+  * List patients that match a pattern.
   */
 
-class DicomCFindPatient(callingAETitle: String, calledPacs: PACS, retrieveList: Seq[AttributeTag] = DicomCFindPatient.defaultRetrieveList)
+class DicomCFindPatientList(callingAETitle: String, calledPacs: PACS, retrieveList: Seq[AttributeTag] = DicomCFindPatientList.defaultRetrieveList)
     extends DicomCFindBase(callingAETitle, calledPacs, retrieveList) {
 
   override protected val queryRetrieveInformationModel: String = SOPClass.PatientRootQueryRetrieveInformationModelFind
@@ -41,7 +41,7 @@ class DicomCFindPatient(callingAETitle: String, calledPacs: PACS, retrieveList: 
     * @param PatientID Only get series for this patient.  This may optionally contain wildcard characters, e.g. 1005*23
     * @return List of series.
     */
-  def findByPatient(PatientID: String): Seq[AttributeList] = {
+  def findPatientList(PatientID: String): Seq[AttributeList] = {
     val al = new AttributeList
 
     val serUidAttr = AttributeFactory.newAttribute(TagFromName.PatientID)
@@ -53,7 +53,7 @@ class DicomCFindPatient(callingAETitle: String, calledPacs: PACS, retrieveList: 
 
 }
 
-object DicomCFindPatient extends IdentifierHandler with Logging {
+object DicomCFindPatientList extends IdentifierHandler with Logging {
 
   /**
     * Default list of tags to retrieve.  The called PACS may or may not return these, depending on
@@ -85,10 +85,10 @@ object DicomCFindPatient extends IdentifierHandler with Logging {
     else {
       val cl = commandLine.get
 
-      val cFind = new DicomCFindPatient(getClientAETitle(cl), getServerPACS(cl))
+      val cFind = new DicomCFindPatientList(getClientAETitle(cl), getServerPACS(cl))
 
       def findPatientData(PatientID: String): Unit = {
-        val result = cFind.findByPatient(PatientID)
+        val result = cFind.findPatientList(PatientID)
         val text = findResultToText(result)
         println("\n----------------------------------------------------------------------------------------------------")
         println(s"PatientID: $PatientID    Number of results: ${result.size}\n$text")

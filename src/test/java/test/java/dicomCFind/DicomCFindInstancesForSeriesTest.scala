@@ -92,7 +92,7 @@ object DicomCFindInstancesForSeriesTest extends IdentifierHandler with Logging {
 
     // test single find
 
-    val resultList = rec.findBySeriesInstanceUID(SeriesInstanceUID)
+    val resultList = rec.findInstanceListForSeries(SeriesInstanceUID)
 
     val elapsedSingle = System.currentTimeMillis - startSingle
     println("Done with single find.  Elapsed time in ms: " + elapsedSingle)
@@ -102,7 +102,7 @@ object DicomCFindInstancesForSeriesTest extends IdentifierHandler with Logging {
     val expectedSize = resultList.size
 
     rec.close()
-    val resultList2 = rec.findBySeriesInstanceUID(SeriesInstanceUID)
+    val resultList2 = rec.findInstanceListForSeries(SeriesInstanceUID)
     showResultList(resultList2)
 
     // ----------------------------------------------------------------------------------------
@@ -112,7 +112,7 @@ object DicomCFindInstancesForSeriesTest extends IdentifierHandler with Logging {
     val startMulti = System.currentTimeMillis()
     val count = 20
     (0 until count).foreach(i => {
-      val r = rec.findBySeriesInstanceUID(SeriesInstanceUID)
+      val r = rec.findInstanceListForSeries(SeriesInstanceUID)
       if (i == 0) showResultList(r)
       if (r.size != expectedSize)
         throw new RuntimeException(s"Failure.  Expected $expectedSize results but got ${r.size}")

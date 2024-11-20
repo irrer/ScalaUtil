@@ -140,7 +140,8 @@ object DicomGetter extends Logging {
 
     // TODO put query here
     // fetchPatient("008872739")
-    fetchSeries("1.2.246.352.62.2.5453887666602174068.467444925849852850") // $AQA_TB3 gap skew that seems to be problematic
+    // fetchSeries("1.2.246.352.62.2.5668201371073720637.10222042694179389615") // $AQA_TB3 gap skew that seems to be problematic
+    fetchInstance("1.2.246.352.71.5.427549902257.981519.20230214102306")
     // fetchSeries("1.2.246.352.62.2.5263594622170571224.8003024706199981243") // random daily QA RTIMAGE set
 
     // ===================================================================================================

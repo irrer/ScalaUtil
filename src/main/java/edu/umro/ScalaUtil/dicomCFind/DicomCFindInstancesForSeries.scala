@@ -41,7 +41,7 @@ class DicomCFindInstancesForSeries(callingAETitle: String, calledPacs: PACS, ret
     * @param SeriesInstanceUID For this series.
     * @return List of series.
     */
-  def findBySeriesInstanceUID(SeriesInstanceUID: String): Seq[AttributeList] = {
+  def findInstanceListForSeries(SeriesInstanceUID: String): Seq[AttributeList] = {
     val al = new AttributeList
 
     val serUidAttr = AttributeFactory.newAttribute(TagFromName.SeriesInstanceUID)
@@ -53,7 +53,7 @@ class DicomCFindInstancesForSeries(callingAETitle: String, calledPacs: PACS, ret
 
 }
 
-private object DicomCFindInstancesForSeries extends IdentifierHandler with Logging {
+object DicomCFindInstancesForSeries extends IdentifierHandler with Logging {
 
   /**
     * Default list of tags to retrieve.  The called PACS may or may not return these, depending on
@@ -98,7 +98,7 @@ private object DicomCFindInstancesForSeries extends IdentifierHandler with Loggi
       val cFind = new DicomCFindInstancesForSeries(getClientAETitle(cl), getServerPACS(cl))
 
       def findSeriesData(SeriesInstanceUID: String): Unit = {
-        val result = cFind.findBySeriesInstanceUID(SeriesInstanceUID)
+        val result = cFind.findInstanceListForSeries(SeriesInstanceUID)
         val text = findResultToText(result)
         println("\n")
         println(s"SeriesInstanceUID: $SeriesInstanceUID    Number of results: ${result.size}\n$text")

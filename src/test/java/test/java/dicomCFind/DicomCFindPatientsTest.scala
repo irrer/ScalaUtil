@@ -23,13 +23,13 @@ import com.pixelmed.network.IdentifierHandler
 import edu.umro.ScalaUtil.DicomUtil
 import edu.umro.ScalaUtil.Logging
 import edu.umro.ScalaUtil.PACS
-import edu.umro.ScalaUtil.dicomCFind.DicomCFindPatient
+import edu.umro.ScalaUtil.dicomCFind.DicomCFindPatientList
 
 /**
   * Test DicomCFindSeriesForPatient
   */
 
-object DicomCFindPatientTest extends IdentifierHandler with Logging {
+object DicomCFindPatientsTest extends IdentifierHandler with Logging {
 
   private def al2Human(result: AttributeList): String = {
 
@@ -82,14 +82,14 @@ object DicomCFindPatientTest extends IdentifierHandler with Logging {
     val callingAETitle = "IRRER"
     val calledPacs = new PACS("VMSDBD", "10.30.65.100", 105)
 
-    val rec = new DicomCFindPatient(callingAETitle, calledPacs)
+    val rec = new DicomCFindPatientList(callingAETitle, calledPacs)
 
     // ----------------------------------------------------------------------------------------
 
     // test single find
 
     val expectedSize: Int = if (true) {
-      val resultList = rec.findByPatient(PatientID)
+      val resultList = rec.findPatientList(PatientID)
 
       val elapsedSingle = System.currentTimeMillis - startSingle
       println("Done with single find.  Elapsed time in ms: " + elapsedSingle + "    Number of results: " + resultList.size)
@@ -105,7 +105,7 @@ object DicomCFindPatientTest extends IdentifierHandler with Logging {
     // test single find with Modality specified.
 
     if (true) {
-      val resultList = rec.findByPatient(PatientID)
+      val resultList = rec.findPatientList(PatientID)
 
       val elapsedSingle = System.currentTimeMillis - startSingle
       println(s"Done with single find with $PatientID.  Elapsed time in ms: $elapsedSingle    Number of results: ${resultList.size}")
@@ -122,7 +122,7 @@ object DicomCFindPatientTest extends IdentifierHandler with Logging {
     val startMulti = System.currentTimeMillis()
     val count = 20
     (0 until count).foreach(_ => {
-      val r = rec.findByPatient(PatientID)
+      val r = rec.findPatientList(PatientID)
       if (r.size != expectedSize)
         throw new RuntimeException(s"Failure.  Expected $expectedSize results but got ${r.size}")
     })

@@ -41,7 +41,7 @@ class DicomCFindSeriesForPatient(callingAETitle: String, calledPacs: PACS, retri
     * @param PatientID Only get series for this patient.  This may optionally contain wildcard characters, e.g. 1005*23
     * @return List of series.
     */
-  def findByPatient(PatientID: String, Modality: Option[String] = None): Seq[AttributeList] = {
+  def findSeriesForPatient(PatientID: String, Modality: Option[String] = None): Seq[AttributeList] = {
     val al = new AttributeList
 
     val serUidAttr = AttributeFactory.newAttribute(TagFromName.PatientID)
@@ -59,7 +59,7 @@ class DicomCFindSeriesForPatient(callingAETitle: String, calledPacs: PACS, retri
 
 }
 
-private object DicomCFindSeriesForPatient extends IdentifierHandler with Logging {
+object DicomCFindSeriesForPatient extends IdentifierHandler with Logging {
 
   /**
     * Default list of tags to retrieve.  The called PACS may or may not return these, depending on
@@ -102,7 +102,7 @@ private object DicomCFindSeriesForPatient extends IdentifierHandler with Logging
 
     val options = new Options()
 
-    val modalityOption = new Option("m", "modality", true, "If specified, only get series of this modality.")
+    val modalityOption = new Option("M", "MODALITY", true, "If specified, only get series of this modality.")
     options.addOption(modalityOption)
 
     addClientAETitleOption(options)
@@ -124,7 +124,7 @@ private object DicomCFindSeriesForPatient extends IdentifierHandler with Logging
       val cFind = new DicomCFindSeriesForPatient(getClientAETitle(cl), getServerPACS(cl))
 
       def findSeriesData(PatientID: String): Unit = {
-        val result = cFind.findByPatient(PatientID, modality)
+        val result = cFind.findSeriesForPatient(PatientID, modality)
         val text = findResultToText(result)
         println("\n----------------------------------------------------------------------------------------------------")
         val m = if (modality.isDefined) modality.get else "NA"

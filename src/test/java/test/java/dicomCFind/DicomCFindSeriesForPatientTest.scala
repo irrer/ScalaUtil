@@ -89,7 +89,7 @@ object DicomCFindSeriesForPatientTest extends IdentifierHandler with Logging {
     // test single find
 
     val expectedSize: Int = if (true) {
-      val resultList = rec.findByPatient(PatientID)
+      val resultList = rec.findSeriesForPatient(PatientID)
 
       val elapsedSingle = System.currentTimeMillis - startSingle
       println("Done with single find.  Elapsed time in ms: " + elapsedSingle + "    Number of results: " + resultList.size)
@@ -106,7 +106,7 @@ object DicomCFindSeriesForPatientTest extends IdentifierHandler with Logging {
 
     if (true) {
       val Modality = "RTPLAN"
-      val resultList = rec.findByPatient(PatientID, Some(Modality))
+      val resultList = rec.findSeriesForPatient(PatientID, Some(Modality))
 
       val elapsedSingle = System.currentTimeMillis - startSingle
       println(s"Done with single find with $Modality.  Elapsed time in ms: $elapsedSingle    Number of results: ${resultList.size}")
@@ -123,7 +123,7 @@ object DicomCFindSeriesForPatientTest extends IdentifierHandler with Logging {
     val startMulti = System.currentTimeMillis()
     val count = 20
     (0 until count).foreach(_ => {
-      val r = rec.findByPatient(PatientID)
+      val r = rec.findSeriesForPatient(PatientID)
       if (r.size != expectedSize)
         throw new RuntimeException(s"Failure.  Expected $expectedSize results but got ${r.size}")
     })

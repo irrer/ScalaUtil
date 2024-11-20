@@ -97,19 +97,14 @@ abstract class DicomCFindBase(callingAETitle: String, calledPacs: PACS, retrieve
     newQuery.put(queryLevelAt)
 
     val resultList: Seq[AttributeList] = {
-      try {
-        val identHandler = new IdentHandler(limit)
-        if (association.isEmpty)
-          association = Some(makeAssociation())
-        new FindSOPClassSCU(association.get, affectedSOPClass, newQuery, identHandler)
-        val list = identHandler.get
-        list
-      } catch {
-        case t: Throwable =>
-          logger.warn("Unexpected exception while performing C-FIND: " + fmtEx(t))
-          Seq[AttributeList]()
-      }
+      val identHandler = new IdentHandler(limit)
+      if (association.isEmpty)
+        association = Some(makeAssociation())
+      new FindSOPClassSCU(association.get, affectedSOPClass, newQuery, identHandler)
+      val list = identHandler.get
+      list
     }
+
     resultList
   }
 

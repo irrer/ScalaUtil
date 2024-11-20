@@ -28,7 +28,6 @@ import edu.umro.ScalaUtil.DicomCliUtil
 import edu.umro.ScalaUtil.FileUtil
 import edu.umro.ScalaUtil.Logging
 import edu.umro.ScalaUtil.PACS
-import edu.umro.ScalaUtil.Trace
 import org.apache.commons.cli.CommandLine
 import org.apache.commons.cli.Option
 
@@ -39,30 +38,30 @@ import java.util.Date
 import scala.annotation.tailrec
 
 /**
- * Copy DICOM files from other systems to this one using C-MOVE.  This contains methods that initiate C-MOVEs.
- *
- * Warning: This class creates a local DICOM association that contains a socket, and therefore persists until
- * closed.  This means that instances of this object will remain instantiated (not garbage collected) even
- * though they may no longer be referenced.  When done with this object, the caller should call the close method.
- *
- * Note: Use of the query information models and query retrieve levels may be platform dependent.  It was found that the ones
- * used here worked against the Varian VMSDBD daemon and Conquest, but other PACS devices may have different requirements.
- *
- * For reference:
- *
- * Information models:
- * StudyRootQueryRetrieveInformationModelMove        : 1.2.840.10008.5.1.4.1.2.2.2
- * PatientRootQueryRetrieveInformationModelMove      : 1.2.840.10008.5.1.4.1.2.1.2
- * PatientStudyOnlyQueryRetrieveInformationModelMove : 1.2.840.10008.5.1.4.1.2.3.2
- *
- * 0008,0052 QueryRetrieveLevel:
- * STUDY
- * SERIES
- * IMAGE
- *
- * @param srcPacs            Source PACS that will be sending files.
- * @param dicomCMoveReceiver DICOM receiver.
- */
+  * Copy DICOM files from other systems to this one using C-MOVE.  This contains methods that initiate C-MOVEs.
+  *
+  * Warning: This class creates a local DICOM association that contains a socket, and therefore persists until
+  * closed.  This means that instances of this object will remain instantiated (not garbage collected) even
+  * though they may no longer be referenced.  When done with this object, the caller should call the close method.
+  *
+  * Note: Use of the query information models and query retrieve levels may be platform dependent.  It was found that the ones
+  * used here worked against the Varian VMSDBD daemon and Conquest, but other PACS devices may have different requirements.
+  *
+  * For reference:
+  *
+  * Information models:
+  * StudyRootQueryRetrieveInformationModelMove        : 1.2.840.10008.5.1.4.1.2.2.2
+  * PatientRootQueryRetrieveInformationModelMove      : 1.2.840.10008.5.1.4.1.2.1.2
+  * PatientStudyOnlyQueryRetrieveInformationModelMove : 1.2.840.10008.5.1.4.1.2.3.2
+  *
+  * 0008,0052 QueryRetrieveLevel:
+  * STUDY
+  * SERIES
+  * IMAGE
+  *
+  * @param srcPacs            Source PACS that will be sending files.
+  * @param dicomCMoveReceiver DICOM receiver.
+  */
 class DicomCMoveGetter(srcPacs: PACS, dicomCMoveReceiver: DicomCMoveReceiver) extends Logging with Closeable {
 
   private case class TagValue(tag: AttributeTag, value: String) {
@@ -80,20 +79,19 @@ class DicomCMoveGetter(srcPacs: PACS, dicomCMoveReceiver: DicomCMoveReceiver) ex
   }
 
   /**
-   * Association for starting C-MOVE.  Created and released as necessary.
-   */
+    * Association for starting C-MOVE.  Created and released as necessary.
+    */
   private var association: scala.Option[Association] = None
 
   private def makeAssociation: Association = {
     MoveSOPClassSCU.getSuitableAssociation(srcPacs.host, srcPacs.port, srcPacs.aeTitle, dicomCMoveReceiver.thisPacs.aeTitle, SOPClass.PatientRootQueryRetrieveInformationModelMove)
   }
 
-
   /**
-   * Make a new subdirectory for receiving DICOM files.
-   *
-   * @return New subdirectory.
-   */
+    * Make a new subdirectory for receiving DICOM files.
+    *
+    * @return New subdirectory.
+    */
   @tailrec
   private def makeUniqueSubDir(specification: AttributeList): File = {
 
@@ -301,7 +299,7 @@ object DicomCMoveGetter extends Logging {
 
   def main(args: Array[String]): Unit = {
 
-    val mainDir = new File("""D:\tmp\getter\test""")
+    val mainDir = new File("""D:\tmp\getter""")
     val thisPacs = new PACS("WLQA_TEST", "141.214.125.209", 5682)
 
     import DicomCliUtil._
@@ -334,16 +332,12 @@ object DicomCMoveGetter extends Logging {
 
     val start = System.currentTimeMillis()
 
-    Trace.trace()
     val remainingArgs = commandLine.getArgs
 
-    Trace.trace("remainingArgs: " + remainingArgs.mkString("\n"))
     val rec = DicomCMoveReceiver(mainDir, thisPacs)
 
-    Trace.trace()
     val getter = new DicomCMoveGetter(srcPacs, rec)
 
-    Trace.trace()
     val result: CMoveResult = 0 match {
       case _ if commandLine.hasOption(optionImage.getOpt) => getter.getInstance(commandLine.getOptionValue(optionImage.getOpt))
       case _ if commandLine.hasOption(optionSeries.getOpt) => getter.getSeries(commandLine.getOptionValue(optionSeries.getOpt))
@@ -353,12 +347,9 @@ object DicomCMoveGetter extends Logging {
         throw new RuntimeException("Unexpected state.")
     }
 
-    Trace.trace()
     val elapsed_ms = System.currentTimeMillis() - start
-    Trace.trace()
 
     println(s"C-MOVE processed in ${edu.umro.ScalaUtil.Util.intervalTimeUserFriendly(elapsed_ms)}")
-    Trace.trace()
 
     if (result.errorMessage.isEmpty) {
       val size = FileUtil.listFiles(result.dir).size
