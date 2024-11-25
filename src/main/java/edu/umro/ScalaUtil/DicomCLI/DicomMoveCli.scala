@@ -24,16 +24,16 @@ object DicomMoveCli {
 
     val argList = cl.getArgs.toSeq
 
-    val image = cl.getOptionValue(DicomCliUtil.optionLevelImage.getOpt)
-    val series = cl.getOptionValue(DicomCliUtil.optionLevelSeries.getOpt)
-    val patient = cl.getOptionValue(DicomCliUtil.optionLevelPatient.getOpt)
+    val image = cl.hasOption(DicomCliUtil.optionLevelImage.getOpt)
+    val series = cl.hasOption(DicomCliUtil.optionLevelSeries.getOpt)
+    val patient = cl.hasOption(DicomCliUtil.optionLevelPatient.getOpt)
 
     (image, series, patient) match {
-      case (_, null, null) =>
+      case (true, false, false) =>
         argList.foreach(uid => getter.getInstance(uid))
-      case (null, _, null) =>
+      case (false, true, false) =>
         argList.foreach(serUid => getter.getSeries(serUid))
-      case (null, null, _) =>
+      case (false, false, true) =>
         val modality = DicomCliUtil.getModality(cl)
         argList.foreach(patient => getter.getPatient(patient, modality))
     }
@@ -42,7 +42,24 @@ object DicomMoveCli {
 
   private val helpText =
     """
+      |C-MOVE one image:
       |
+      |    -d C:\MyDir -l localPacs  -r RemotePacs  -I  SOPInstanceUID1  SOPInstanceUID2 ...
+      |
+      |C-MOVE one series:
+      |
+      |    -d C:\MyDir -l localPacs  -r RemotePacs  -S  SeriesInstanceUID1  SeriesInstanceUID2 ...
+      |
+      |C-MOVE one patient:
+      |
+      |    -c ClientAETitle  -r RemotePacs  <-M Modality> -P  PatientID1  PatientID2 ...
+      |
+      |Arguments may use either % or * as wildcards, as in the following, which would match
+      |any patient ID starting with '$QASRS' :
+      |
+      |    $QASRS%
+      |
+      |Modality attribute is not always honored by remote PACS.
       |""".stripMargin
 
   def main(args: Array[String]): Unit = {
@@ -63,9 +80,13 @@ object DicomMoveCli {
       System.exit(1)
     else {
       val cl = commandLine.get
+
+      println(DicomCliUtil.fmtParameters(cl))
+      println
+
       move(cl)
       Thread.sleep(100)
-      System.exit(1)
+      System.exit(0)
     }
   }
 }
