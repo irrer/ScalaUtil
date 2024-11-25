@@ -52,7 +52,7 @@ object DicomFindCli {
     """
       |Utility for performing C-FIND from the command line.
       |
-      |List image in series:
+      |List images:
       |
       |    -c ClientAETitle  -r RemotePacs  -I  SeriesInstanceUID
       |
