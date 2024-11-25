@@ -22,7 +22,6 @@ import com.pixelmed.dicom.AttributeTag
 import com.pixelmed.dicom.SOPClass
 import com.pixelmed.dicom.TagFromName
 import com.pixelmed.network.IdentifierHandler
-import edu.umro.ScalaUtil.DicomCliUtil
 import edu.umro.ScalaUtil.Logging
 import edu.umro.ScalaUtil.PACS
 
@@ -62,45 +61,10 @@ object DicomCFindPatientList extends IdentifierHandler with Logging {
   private val defaultRetrieveList: Seq[AttributeTag] = Seq(
     TagFromName.InstitutionName,
     TagFromName.PatientName,
+    TagFromName.PatientID,
     TagFromName.PatientBirthDate,
     TagFromName.PatientBirthTime,
     TagFromName.OtherPatientIDs
   )
 
-  // ----------------------------------------------------------------------------------------------------
-
-  def main(args: Array[String]): Unit = {
-    import DicomCliUtil._
-    import org.apache.commons.cli.Options
-
-    val options = new Options()
-
-    addClientAETitleOption(options)
-    addServerOptions(options)
-
-    val commandLine = parseOptions(options, args)
-
-    if (commandLine.isEmpty)
-      System.exit(1)
-    else {
-      val cl = commandLine.get
-
-      val cFind = new DicomCFindPatientList(getClientAETitle(cl), getServerPACS(cl))
-
-      def findPatientData(PatientID: String): Unit = {
-        val result = cFind.findPatientList(PatientID)
-        val text = findResultToText(result)
-        println("\n----------------------------------------------------------------------------------------------------")
-        println(s"PatientID: $PatientID    Number of results: ${result.size}\n$text")
-      }
-
-      val patientIdList = cl.getArgs
-
-      if (patientIdList.isEmpty)
-        showHelp(options)
-      else
-        patientIdList.foreach(findPatientData)
-    }
-
-  }
 }

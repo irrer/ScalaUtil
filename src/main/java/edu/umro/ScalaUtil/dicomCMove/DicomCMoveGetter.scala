@@ -24,7 +24,8 @@ import com.pixelmed.dicom.SOPClass
 import com.pixelmed.dicom.TagFromName
 import com.pixelmed.network.Association
 import com.pixelmed.network.MoveSOPClassSCU
-import edu.umro.ScalaUtil.DicomCliUtil
+import edu.umro.DicomDict.TagByName
+import edu.umro.ScalaUtil.DicomCLI.DicomCliUtil
 import edu.umro.ScalaUtil.FileUtil
 import edu.umro.ScalaUtil.Logging
 import edu.umro.ScalaUtil.PACS
@@ -228,7 +229,8 @@ class DicomCMoveGetter(srcPacs: PACS, dicomCMoveReceiver: DicomCMoveReceiver) ex
    * @param PatientID For the series to be gotten.
    * @return On success return the directory containing the files.  On failure, return an error message.
    */
-  def getPatient(PatientID: String): CMoveResult = {
+  def getPatient(PatientID: String, Modality: scala.Option[String] = None): CMoveResult = {
+
 
     val specification = makeSpecification(
       Seq(
@@ -236,6 +238,12 @@ class DicomCMoveGetter(srcPacs: PACS, dicomCMoveReceiver: DicomCMoveReceiver) ex
         TagValue(TagFromName.PatientID, PatientID)
       )
     )
+
+    if (Modality.isDefined) {
+      val attr = AttributeFactory.newAttribute(TagByName.Modality)
+      attr.addValue(Modality.get)
+      specification.put(attr)
+    }
 
     val result = cMove(specification: AttributeList, SOPClass.PatientRootQueryRetrieveInformationModelMove)
 
@@ -307,7 +315,7 @@ object DicomCMoveGetter extends Logging {
 
     val options = new Options()
 
-    addServerOptions(options)
+    addRemotePacsOption(options)
 
     val optionImage = new Option("I", "IMAGE", true, "get single image with image UID.")
     val optionSeries = new Option("S", "SERIES", true, "get all images in series with series UID.")
@@ -318,7 +326,7 @@ object DicomCMoveGetter extends Logging {
     options.addOption(optionPatient)
 
     val commandLine: CommandLine = {
-      val cl = parseOptions(options, args)
+      val cl = parseOptions(options, args, "")
 
       if (cl.isDefined) cl.get
       else {
@@ -328,7 +336,7 @@ object DicomCMoveGetter extends Logging {
       }
     }
 
-    val srcPacs = getServerPACS(commandLine)
+    val srcPacs = getRemotePACS(commandLine)
 
     val start = System.currentTimeMillis()
 
@@ -357,7 +365,7 @@ object DicomCMoveGetter extends Logging {
       System.exit(0)
     } else {
       println(s"Error: ${result.errorMessage.get}")
-      showHelp(options)
+      showHelp(options, "")
       System.exit(1)
     }
   }

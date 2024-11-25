@@ -1,0 +1,16 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="DicomFindCli" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="edu.umro.ScalaUtil.DicomCLI.DicomFindCli" />
+    <module name="ScalaUtil_2.12" />
+    <option name="PROGRAM_PARAMETERS" value="--client WLQA_TEST --remote IRRER@141.214.125.209:15678 --SERIES 1.2.826.0.1.3680043.2.1125.1.82216987923424063916469565918890135" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="edu.umro.ScalaUtil.DicomCLI.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

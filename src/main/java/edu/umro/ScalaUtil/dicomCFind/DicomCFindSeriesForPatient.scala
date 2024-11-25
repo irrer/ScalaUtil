@@ -22,7 +22,6 @@ import com.pixelmed.dicom.AttributeTag
 import com.pixelmed.dicom.SOPClass
 import com.pixelmed.dicom.TagFromName
 import com.pixelmed.network.IdentifierHandler
-import edu.umro.ScalaUtil.DicomCliUtil
 import edu.umro.ScalaUtil.Logging
 import edu.umro.ScalaUtil.PACS
 
@@ -92,53 +91,5 @@ object DicomCFindSeriesForPatient extends IdentifierHandler with Logging {
     TagFromName.PatientOrientation,
     TagFromName.FrameOfReferenceUID
   )
-
-  // ----------------------------------------------------------------------------------------------------
-
-  def main(args: Array[String]): Unit = {
-    import DicomCliUtil._
-    import org.apache.commons.cli.Option
-    import org.apache.commons.cli.Options
-
-    val options = new Options()
-
-    val modalityOption = new Option("M", "MODALITY", true, "If specified, only get series of this modality.")
-    options.addOption(modalityOption)
-
-    addClientAETitleOption(options)
-    addServerOptions(options)
-
-    val commandLine = parseOptions(options, args)
-
-    if (commandLine.isEmpty)
-      System.exit(1)
-    else {
-      val cl = commandLine.get
-
-      val modality: scala.Option[String] = {
-        if (cl.hasOption(modalityOption.getOpt))
-          Some(cl.getOptionValue(modalityOption.getOpt))
-        else None
-      }
-
-      val cFind = new DicomCFindSeriesForPatient(getClientAETitle(cl), getServerPACS(cl))
-
-      def findSeriesData(PatientID: String): Unit = {
-        val result = cFind.findSeriesForPatient(PatientID, modality)
-        val text = findResultToText(result)
-        println("\n----------------------------------------------------------------------------------------------------")
-        val m = if (modality.isDefined) modality.get else "NA"
-        println(s"PatientID: $PatientID    Modality: $m    Number of results: ${result.size}\n$text")
-      }
-
-      val patientIdList = cl.getArgs
-
-      if (patientIdList.isEmpty)
-        showHelp(options)
-      else
-        patientIdList.foreach(findSeriesData)
-
-    }
-  }
 
 }
