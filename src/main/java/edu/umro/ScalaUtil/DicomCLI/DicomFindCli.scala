@@ -58,7 +58,7 @@ object DicomFindCli {
       |
       |List Series for patient:
       |
-      |    -c ClientAETitle  -r RemotePacs  [-M Modality ]  -S  PatientID1  PatientID2  ...
+      |    -c ClientAETitle  -r RemotePacs  <-M Modality>  -S  PatientID1  PatientID2  ...
       |
       |List Patients.  May contain either
       |
