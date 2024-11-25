@@ -120,8 +120,9 @@ object DicomGetter extends Logging {
       */
     def fetchInstance(sopUid: String): Unit = {
       dicomReceiver.setSubDir(sopUid)
-      val id = buildIdentifier
-      val id2 = addAttr(TagFromName.SOPInstanceUID, sopUid, id)
+      val id = new AttributeList
+      addAttr(TagFromName.QueryRetrieveLevel, "IMAGE", id)
+      addAttr(TagFromName.SOPInstanceUID, sopUid, id)
       val subDir = new File(mainDir, sopUid)
       if (subDir.exists) edu.umro.util.Utility.deleteFileTree(subDir)
 
@@ -138,10 +139,10 @@ object DicomGetter extends Logging {
 
     // ===================================================================================================
 
-    // TODO put query here
+    // put query here
     // fetchPatient("008872739")
     // fetchSeries("1.2.246.352.62.2.5668201371073720637.10222042694179389615") // $AQA_TB3 gap skew that seems to be problematic
-    fetchInstance("1.2.246.352.71.5.427549902257.981519.20230214102306")
+    fetchInstance("1.2.246.352.71.5.427549902257.975735.20230125091936")
     // fetchSeries("1.2.246.352.62.2.5263594622170571224.8003024706199981243") // random daily QA RTIMAGE set
 
     // ===================================================================================================
