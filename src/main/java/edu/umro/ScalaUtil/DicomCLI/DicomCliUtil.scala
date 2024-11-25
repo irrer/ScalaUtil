@@ -294,9 +294,9 @@ object DicomCliUtil {
 
     val mod = optGet(optionModality, _.getOptionValue(optionModality.getOpt), "Modality")
 
-    val img = optGet(optionLevelImage, _.getOptionValue(optionLevelImage.getOpt), "Image level search")
-    val ser = optGet(optionLevelSeries, _.getOptionValue(optionLevelSeries.getOpt), "Series level search")
-    val pat = optGet(optionLevelPatient, _.getOptionValue(optionLevelPatient.getOpt), "Patient level search")
+    val img = optGet(optionLevelImage, _.getOptionValue(optionLevelImage.getOpt), "Image level")
+    val ser = optGet(optionLevelSeries, _.getOptionValue(optionLevelSeries.getOpt), "Series level")
+    val pat = optGet(optionLevelPatient, _.getOptionValue(optionLevelPatient.getOpt), "Patient level")
 
     val dir = optGet(optionDir, _.getOptionValue(optionDir.getOpt), "Target directory")
 
