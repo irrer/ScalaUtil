@@ -154,6 +154,12 @@ object DicomCliUtil {
         }
       }
 
+      if (command.getArgs.toSeq.isEmpty) {
+        println(s"No arguments given.")
+        showHelp(options, helpText)
+        System.exit(1)
+      }
+
       if (options.hasOption(optionLevelImage.getOpt))
         parseLevelOption(options, command, helpText)
 
