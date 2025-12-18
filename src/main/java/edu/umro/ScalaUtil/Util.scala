@@ -218,6 +218,21 @@ object Util {
   //noinspection ScalaUnusedSymbol
   def daysToMs(days: Double): Long = (days * 24 * 60 * 60 * 1000.0).round
 
+  /**
+   * Show a copy of the given text in gvim.  The text is written to a
+   * temporary file, so although you have write permission, the original
+   * string in the program will not change.
+   *
+   * @param text Display this text.
+   */
+  def showTextInGVim(text: String): Unit = {
+    val tempFile = File.createTempFile("gvimView", ".txt")
+    tempFile.deleteOnExit()
+    FileUtil.writeFile(tempFile, text)
+    val vimCmd1 = Array("gvim", tempFile.getAbsolutePath)
+    new ProcessBuilder(vimCmd1: _*).start()
+  }
+
   /** For testing only. */
   def main(args: Array[String]): Unit = {
     println("Properties: " + getJarPropertyFile(LS.getClass))
