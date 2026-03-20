@@ -16,24 +16,15 @@
 
 package test.java
 
-import java.io.File
-import edu.umro.util.Utility
-import edu.umro.util.UMROGUID
-import com.pixelmed.dicom.AttributeList
-import com.pixelmed.dicom.TagFromName
-import com.pixelmed.dicom.AttributeTag
-import com.pixelmed.dicom.AttributeFactory
-import com.pixelmed.dicom.SOPClass
-import com.pixelmed.dicom.TransferSyntax
-import java.util.Date
-import com.pixelmed.dicom.OtherByteAttribute
-import com.pixelmed.dicom.OtherWordAttribute
-import java.io.FileOutputStream
-import com.pixelmed.dicom.FileMetaInformation
-import edu.umro.ScalaUtil.DicomUtil
-import edu.umro.ScalaUtil.Trace
-import com.pixelmed.dicom.OtherByteAttributeOnDisk
 import com.pixelmed.dicom.Attribute
+import com.pixelmed.dicom.AttributeList
+import com.pixelmed.dicom.FileMetaInformation
+import com.pixelmed.dicom.TagFromName
+import com.pixelmed.dicom.TransferSyntax
+import edu.umro.ScalaUtil.DicomUtil
+import edu.umro.util.UMROGUID
+
+import java.io.File
 
 object Janell {
 
@@ -76,7 +67,7 @@ object Janell {
     println("Created " + file.getAbsolutePath)
   }
 
-  val atList = DicomUtil.findAll(rtstruct, tagSet)
+  val atList = DicomUtil.findAllTagSet(rtstruct, tagSet)
 
   def trans(at: Attribute) = {
 

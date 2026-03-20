@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Level2Ldap" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="edu.umro.ScalaUtil.Level2Ldap" />
-    <module name="ScalaUtil" />
+    <module name="ScalaUtil_2.12" />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="test.java.dicomCFind.*" />

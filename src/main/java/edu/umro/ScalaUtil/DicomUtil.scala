@@ -149,7 +149,7 @@ object DicomUtil {
     * Format an attribute tag as a string.
     */
   //noinspection ScalaWeakerAccess
-  def formatAttrTag(tag: AttributeTag): String = tag.getGroup.formatted("%04x") + "," + tag.getElement.formatted("%04x")
+  def formatAttrTag(tag: AttributeTag): String = "%04x".format(tag.getGroup) + "," + "%04x".format(tag.getElement)
 
   /**
     * Convert a single non-sequence attribute to a human readable text format.
@@ -240,7 +240,7 @@ object DicomUtil {
 
     def toOtherByte(attr: OtherByteAttribute): String = {
       val data = limitedCopy(attr.getByteValues, MAX_LINE_LENGTH / 3)
-      data.map(d => (d.toInt & 0xff).formatted("0x%x")).mkString(" ")
+      data.map(d => "0x%x".format(d.toInt & 0xff)).mkString(" ")
     }
 
     def toOtherFloat(attr: OtherFloatAttribute): String = {
@@ -250,7 +250,7 @@ object DicomUtil {
 
     def toOtherWord(attr: OtherWordAttribute): String = {
       val data = limitedCopy(attr.getShortValues, MAX_LINE_LENGTH / 3)
-      data.map(d => ((d & 0xffff) / 256).formatted("0x%x")).mkString(" ")
+      data.map(d => "0x%x".format((d & 0xffff) / 256)).mkString(" ")
     }
 
     def toSequenceAttribute(attr: SequenceAttribute): String = {
@@ -461,13 +461,7 @@ object DicomUtil {
     (0 until al.getNumberOfItems).map(i => al.getItem(i).getAttributeList)
   }
 
-  /**
-    * Get all instances of attributes that the caller deems interesting.
-    *
-    * @param attributeList to be searched.
-    * @param interesting   Returns true if the attribute is interesting.
-    * @return List of interesting attributes.
-    */
+  /*
   def findAll(attributeList: AttributeList, interesting: Attribute => Boolean): IndexedSeq[Attribute] = {
 
     def childSeq(al: AttributeList): IndexedSeq[AttributeList] = {
@@ -481,6 +475,49 @@ object DicomUtil {
     val all = listOfInterest ++ childSeq(attributeList).flatMap(child => findAll(child, interesting))
     all
   }
+   */
+
+  /**
+    * Get all instances of attributes that the caller deems interesting.
+    *
+    * @param attributeList to be searched.
+    * @param interesting   Returns true if the attribute is interesting.
+    * @return List of interesting attributes.
+    */
+  def findAll(attributeList: AttributeList, interesting: Attribute => Boolean): Seq[Attribute] = {
+    def findEm(attrList: AttributeList): Seq[Attribute] = {
+      val topList =
+        attrList.values.toArray.toList.toIndexedSeq.map(at => at.asInstanceOf[Attribute]).filter(interesting)
+
+      val seqTagList = attrList.values.toArray.filter(at => at.isInstanceOf[SequenceAttribute]).map(at => at.asInstanceOf[SequenceAttribute].getTag)
+      val childList = seqTagList.flatMap(st => seqToAttr(attrList, st))
+      val list = childList.flatMap(findEm)
+      list ++ topList
+    }
+
+    val finalList = findEm(attributeList)
+    finalList
+  }
+
+  /**
+    * Get all instances of attributes with a tag on the given list by searching the given <code>AttributeList</code> recursively.
+    */
+  //noinspection ScalaWeakerAccess
+  def findAllTagSet(attributeList: AttributeList, tagSet: Set[AttributeTag]): IndexedSeq[Attribute] = {
+    findAll(attributeList, attr => tagSet.contains(attr.getTag)).toIndexedSeq
+  }
+
+  /**
+    * Recursively find all attributes with the given tag.
+    * @param attributeList Look in this list.
+    * @param tag Look for attributes with this tag.
+    * @return All attributes with the given tag.
+    */
+  //noinspection ScalaWeakerAccess
+  def findAllTag(attributeList: AttributeList, tag: AttributeTag): IndexedSeq[Attribute] = findAllTagSet(attributeList, Set(tag))
+
+  @deprecated("Use findAllTag instead.")
+  def findAllSingle(attributeList: AttributeList, tag: AttributeTag): IndexedSeq[Attribute] = findAllTag(attributeList, tag)
 
   /**
     * Given an attribute list, return all the attribute lists under it.
@@ -494,15 +531,6 @@ object DicomUtil {
     val all = seqList.flatMap(sq => (0 until sq.getNumberOfItems).map(i => sq.getItem(i).getAttributeList))
     al +: all
   }
-
-  /**
-    * Get all instances of attributes with a tag on the given list by searching the given <code>AttributeList</code> recursively.
-    */
-  def findAll(attributeList: AttributeList, tagSet: Set[AttributeTag]): IndexedSeq[Attribute] = {
-    findAll(attributeList, attr => tagSet.contains(attr.getTag))
-  }
-
-  def findAllSingle(attributeList: AttributeList, tag: AttributeTag): IndexedSeq[Attribute] = findAll(attributeList, Set(tag))
 
   private def getTransferSyntax(attributeList: AttributeList): String = {
     val ts = attributeList.get(TagFromName.TransferSyntaxUID)
@@ -686,7 +714,7 @@ object DicomUtil {
 
       // get a list of all referenced models
       val ManufacturerModelNameList =
-        findAllSingle(rtplan, TagFromName.ManufacturerModelName)
+        findAllTag(rtplan, TagFromName.ManufacturerModelName)
           .map(a => a.getSingleStringValueOrEmptyString.toUpperCase.trim)
           .distinct
           .filterNot(tmt => tmt.equals(""))
@@ -859,7 +887,7 @@ object DicomUtil {
       println
       findAll(a, Set(TagFromName.SeriesDate, TagByName.FrameOfReferenceUID, TagByName.SeriesInstanceUID)).foreach(attr => println("UID: " + attr))
       println
-      findAllSingle(a, TagFromName.SeriesTime).foreach(attr => println("UID: " + attr))
+      findAllTag(a, TagFromName.SeriesTime).foreach(attr => println("UID: " + attr))
 
       if (false) {
         val s = DicomUtil.attributeListToString(a)

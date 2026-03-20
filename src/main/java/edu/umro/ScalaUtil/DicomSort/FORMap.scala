@@ -37,7 +37,7 @@ object FORMap {
     * @return List of indexes.
     */
   def getForList(al: AttributeList): Seq[Int] = {
-    val list = DicomUtil.findAllSingle(al, TagByName.FrameOfReferenceUID).map(attr => attr.getSingleStringValueOrEmptyString).distinct
+    val list = DicomUtil.findAllTag(al, TagByName.FrameOfReferenceUID).map(attr => attr.getSingleStringValueOrEmptyString).distinct
 
     def addToList(forUID: String): Int = {
       if (!forList.contains(forUID)) {

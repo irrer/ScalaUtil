@@ -17,18 +17,17 @@
 
 package test.java;
 
+import com.pixelmed.dicom.AttributeList
+import com.pixelmed.dicom.AttributeTag
+import com.pixelmed.dicom.TagFromName
+import edu.umro.DicomDict.TagByName
+import edu.umro.ScalaUtil.DicomUtil
+import edu.umro.ScalaUtil.FileUtil
+import edu.umro.ScalaUtil.Trace
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 
 import java.io.File
-import edu.umro.util.Utility
-import edu.umro.ScalaUtil.Trace
-import edu.umro.ScalaUtil.FileUtil
-import com.pixelmed.dicom.AttributeList
-import edu.umro.ScalaUtil.DicomUtil
-import com.pixelmed.dicom.TagFromName
-import com.pixelmed.dicom.AttributeTag
-import edu.umro.DicomDict.TagByName
 
 /**
  * Test DicomUtil.
@@ -50,7 +49,7 @@ class TestDicomUtil extends FlatSpec with Matchers {
       TagByName.AbortFlag,
       TagByName.CumulativeDoseReferenceCoefficient)
 
-    val attrList = DicomUtil.findAll(source, tagSet)
+    val attrList = DicomUtil.findAllTagSet(source, tagSet)
 
     def sizeOf(tag: AttributeTag) = attrList.filter(at => at.getTag.compareTo(tag) == 0).size
 

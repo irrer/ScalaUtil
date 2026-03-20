@@ -117,7 +117,7 @@ object Julia extends Logging {
   }
 
   private def frameOfRefOf(al: AttributeList): String = {
-    val list = DicomUtil.findAllSingle(al, TagFromName.FrameOfReferenceUID).map(at => at.getSingleStringValueOrEmptyString)
+    val list = DicomUtil.findAllTag(al, TagFromName.FrameOfReferenceUID).map(at => at.getSingleStringValueOrEmptyString)
 
     if (modalityOf(al).equals("REG") && (list.size > 1)) {
       val mainFrmOfRef = al.get(TagFromName.FrameOfReferenceUID).getSingleStringValueOrEmptyString

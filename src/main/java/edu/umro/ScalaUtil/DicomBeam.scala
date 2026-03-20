@@ -17,7 +17,7 @@ case class DicomBeam(rtplan: AttributeList, rtimage: AttributeList) {
     */
   //noinspection ScalaUnusedSymbol
   val leafBoundaryList: Seq[Double] = {
-    val list = DicomUtil.findAllSingle(beamAl, TagByName.LeafPositionBoundaries)
+    val list = DicomUtil.findAllTag(beamAl, TagByName.LeafPositionBoundaries)
     if (list.isEmpty)
       Seq()
     else
@@ -36,11 +36,11 @@ case class DicomBeam(rtplan: AttributeList, rtimage: AttributeList) {
 
   /** Gantry angle of RTIMAGE. */
   //noinspection ScalaUnusedSymbol
-  val rtimageGantryAngle: Double = DicomUtil.findAllSingle(rtimage, TagByName.GantryAngle).head.getDoubleValues.head
+  val rtimageGantryAngle: Double = DicomUtil.findAllTag(rtimage, TagByName.GantryAngle).head.getDoubleValues.head
 
   /** Collimator angle of RTIMAGE. */
   //noinspection ScalaUnusedSymbol
-  val rtimageCollimatorAngle: Double = DicomUtil.findAllSingle(rtimage, TagByName.BeamLimitingDeviceAngle).head.getDoubleValues.head
+  val rtimageCollimatorAngle: Double = DicomUtil.findAllTag(rtimage, TagByName.BeamLimitingDeviceAngle).head.getDoubleValues.head
 
   /**
     * Convert arbitrary angle in degrees to a number 360 < degrees >= 0
@@ -59,14 +59,14 @@ case class DicomBeam(rtplan: AttributeList, rtimage: AttributeList) {
     val cpsList = DicomUtil.seqToAttr(beamAl, TagByName.ControlPointSequence)
 
     def absGantryAngleDiff(al: AttributeList): Double = {
-      val angleAttrList = DicomUtil.findAllSingle(al, TagByName.GantryAngle)
+      val angleAttrList = DicomUtil.findAllTag(al, TagByName.GantryAngle)
       val angleList = angleAttrList.flatMap(attr => attr.getDoubleValues)
       val diff = angleList.map(angle => angleDiff(angle, rtimageGantryAngle).abs).min
       diff
     }
 
     def hasGantryAngle(al: AttributeList): Boolean = {
-      val angleAttrList = DicomUtil.findAllSingle(al, TagByName.GantryAngle)
+      val angleAttrList = DicomUtil.findAllTag(al, TagByName.GantryAngle)
       val angleList = angleAttrList.flatMap(attr => attr.getDoubleValues)
       angleList.nonEmpty
     }

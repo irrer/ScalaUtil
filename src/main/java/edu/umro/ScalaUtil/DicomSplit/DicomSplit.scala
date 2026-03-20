@@ -40,7 +40,7 @@ object DicomSplit extends Logging {
       val al = new AttributeList
       al.read(file)
       val SliceLocation = al.get(TagByName.SliceLocation).getDoubleValues.head + zero
-      val diffAttr = DicomUtil.findAllSingle(al, diffTag).head.getSingleStringValueOrNull
+      val diffAttr = DicomUtil.findAllTag(al, diffTag).head.getSingleStringValueOrNull
       val diffText = new String(diffAttr)
       Some(DicomFile(file, SliceLocation, diffText))
     } catch {

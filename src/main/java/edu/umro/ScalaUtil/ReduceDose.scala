@@ -68,7 +68,7 @@ object ReduceDose extends Logging {
           attr.addValue(value)
         }
 
-        DicomUtil.findAllSingle(al, tag).foreach(at => put(at))
+        DicomUtil.findAllTag(al, tag).foreach(at => put(at))
       }
 
       def putScale(tag: AttributeTag, factor: Double): Unit = {
@@ -78,7 +78,7 @@ object ReduceDose extends Logging {
           attr.addValue(factor * old)
         }
 
-        DicomUtil.findAllSingle(al, tag).foreach(at => put(at))
+        DicomUtil.findAllTag(al, tag).foreach(at => put(at))
       }
 
       putAll(TagByName.SOPInstanceUID, UMROGUID.getUID)

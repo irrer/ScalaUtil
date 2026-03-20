@@ -23,7 +23,7 @@ object HW1_FocalSpot {
   }
 
   private def getAttrValue(tag: AttributeTag): String = {
-    DicomUtil.findAllSingle(hw1Phase2, tag).head.getSingleStringValueOrNull
+    DicomUtil.findAllTag(hw1Phase2, tag).head.getSingleStringValueOrNull
   }
 
   val stdFocalSpot = {
@@ -49,7 +49,7 @@ object HW1_FocalSpot {
         attr.addValue(uid)
       }
 
-      DicomUtil.findAllSingle(hw1fs, tag).foreach(fixOne)
+      DicomUtil.findAllTag(hw1fs, tag).foreach(fixOne)
     }
 
     val uidTagList = Seq(
@@ -72,7 +72,7 @@ object HW1_FocalSpot {
         attr.removeValues()
         attr.addValue(value)
       }
-      DicomUtil.findAllSingle(hw1fs, tag).foreach(attr => fix(attr, value))
+      DicomUtil.findAllTag(hw1fs, tag).foreach(attr => fix(attr, value))
     }
 
     def copyAttr(tag: AttributeTag): Unit = fixAttr(tag, getAttrValue(tag))

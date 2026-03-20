@@ -2,7 +2,7 @@
   <configuration default="false" name="DicomMoveCli" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="edu.umro.ScalaUtil.DicomCLI.DicomMoveCli" />
     <module name="ScalaUtil_2.12" />
-    <option name="PROGRAM_PARAMETERS" value="--directory D:\tmp\getter --local WLQA_TEST@141.214.125.209:5682 --remote VMSDBD@10.30.65.100:105  -M RTIMAGE -P $20131024" />
+    <option name="PROGRAM_PARAMETERS" value="--directory D:\tmp\getter --local IRRER@10.21.230.97:15678 --remote VMSDBD@10.30.65.100:105 -S 1.2.246.352.62.2.5146431049532545872.5747164480694404507 " />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="edu.umro.ScalaUtil.DicomCLI.*" />

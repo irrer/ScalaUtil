@@ -64,8 +64,8 @@ object DicomFOR extends Logging {
 
   private val frameOfRefSet = scala.collection.mutable.Set[String]()
 
-  val calendar = Calendar.getInstance
-  val tzOffset_ms = calendar.get(Calendar.ZONE_OFFSET) + calendar.get(Calendar.DST_OFFSET)
+  val calendar: Calendar = Calendar.getInstance
+  val tzOffset_ms: Int = calendar.get(Calendar.ZONE_OFFSET) + calendar.get(Calendar.DST_OFFSET)
   val dateFormat = new SimpleDateFormat("_yyyy-MM-dd_HH-mm-ss-SSS")
 
   private val future = new SimpleDateFormat("yyyyMMddHHMM").parse("210001011111")
@@ -99,14 +99,14 @@ object DicomFOR extends Logging {
     }
   }
 
-  private def updateAttrUid(attr: Attribute) = {
+  private def updateAttrUid(attr: Attribute): Unit = {
     val oldUid = attr.getSingleStringValueOrEmptyString
     val newUid = getNewUid(oldUid)
     attr.removeValues
     attr.addValue(newUid)
   }
 
-  val transferSyntax = TransferSyntax.ImplicitVRLittleEndian
+  val transferSyntax: String = TransferSyntax.ImplicitVRLittleEndian
 
   private def readFile(file: File) = {
     val al = new AttributeList
@@ -115,7 +115,7 @@ object DicomFOR extends Logging {
     al
   }
 
-  private def writeFile(al: AttributeList, file: File) = {
+  private def writeFile(al: AttributeList, file: File): Unit = {
     FileMetaInformation.addFileMetaInformation(al, transferSyntax, "JimIrrer")
     DicomUtil.writeAttributeListToFile(al, file, "JimIrrer")
     //Trace.trace("Created " + file.getAbsolutePath)
@@ -144,7 +144,7 @@ object DicomFOR extends Logging {
   }
 
   private def frameOfRefOf(al: AttributeList): String = {
-    val list = DicomUtil.findAllSingle(al, TagFromName.FrameOfReferenceUID).map(at => at.getSingleStringValueOrEmptyString)
+    val list = DicomUtil.findAllTag(al, TagFromName.FrameOfReferenceUID).map(at => at.getSingleStringValueOrEmptyString)
 
     if (modalityOf(al).equals("REG") && (list.size > 1)) {
       val mainFrmOfRef = al.get(TagFromName.FrameOfReferenceUID).getSingleStringValueOrEmptyString
@@ -218,7 +218,7 @@ object DicomFOR extends Logging {
     (t.getGroup.toLong << 16) + t.getElement
   }
 
-  val lastTagOfInterestAsLong = tagToLong(tagsOfInterest.maxBy(tagToLong))
+  val lastTagOfInterestAsLong: Long = tagToLong(tagsOfInterest.maxBy(tagToLong))
 
   private def readPartial(file: File, lastTagAsLong: Long = lastTagOfInterestAsLong): AttributeList = {
 
@@ -240,7 +240,7 @@ object DicomFOR extends Logging {
     savedAttrList
   }
 
-  var timeToShowProgress = System.currentTimeMillis + 1000
+  var timeToShowProgress: Long = System.currentTimeMillis + 1000
 
   private class DcmFl(f: File) {
 
@@ -253,7 +253,7 @@ object DicomFOR extends Logging {
         partial
     }
 
-    val file = f
+    val file: File = f
     val modality = new String(modalityOf(al))
     val sop = new String(sopOf(al))
     val seriesUid = new String(seriesUidOf(al))
@@ -264,8 +264,8 @@ object DicomFOR extends Logging {
     val referencedPlan = new String(refPlanOf(al))
     val manufacturerModelName = new String(manufModOf(al))
 
-    val position = positionOf(al)
-    val date = {
+    val position: Double = positionOf(al)
+    val date: Date = {
       try {
         dateOfAl(al)
       } catch {
@@ -274,16 +274,16 @@ object DicomFOR extends Logging {
         }
       }
     }
-    val dateText = dateFormat.format(new Date(date.getTime + tzOffset_ms))
+    val dateText: String = dateFormat.format(new Date(date.getTime + tzOffset_ms))
 
-    def copyTo(dest: File) = {
+    def copyTo(dest: File): Unit = {
       val data = FileUtil.readBinaryFile(file).right.get
       dest.getParentFile.mkdirs
       FileUtil.writeBinaryFile(dest, data)
     }
 
     dcmFlCount = dcmFlCount + 1
-    val now = System.currentTimeMillis
+    val now: Long = System.currentTimeMillis
     if (now > timeToShowProgress) {
       Trace.trace("Files read: " + dcmFlCount)
       timeToShowProgress = now + 1000
@@ -300,13 +300,13 @@ object DicomFOR extends Logging {
     al.get(TagFromName.Rows).getIntegerValues.head * al.get(TagFromName.Columns).getIntegerValues.head
   }
 
-  private def saveRtstruct(rtstructDF: DcmFl, outDir: File, frameOfRefIndex: Int, rtstructIndex: Int, imageSeriesList: Seq[Seq[DcmFl]]) = {
+  private def saveRtstruct(rtstructDF: DcmFl, outDir: File, frameOfRefIndex: Int, rtstructIndex: Int, imageSeriesList: Seq[Seq[DcmFl]]): Unit = {
     val destFile = new File(outDir, "RTSTRUCT_" + fmt(frameOfRefIndex) + "_" + fmt(rtstructIndex) + rtstructDF.dateText + ".dcm")
     Trace.trace("Saving RTSTRUCT " + destFile.getAbsolutePath)
     rtstructDF.copyTo(destFile)
   }
 
-  def fmt(i: Int) = i.formatted("%03d")
+  def fmt(i: Int): String = i.formatted("%03d")
 
   private def saveImageSeries(imageSeries: Seq[DcmFl], index: Int, outDir: File) = {
     val modality = imageSeries.head.modality
@@ -327,31 +327,31 @@ object DicomFOR extends Logging {
     imageSeriesList.zipWithIndex.map(si => saveImageSeries(si._1, si._2 + 1, outDir))
   }
 
-  private def saveRtplan(rtplanDM: DcmFl, outDir: File, frmOfRefIndex: Int, planIndex: Int) = {
+  private def saveRtplan(rtplanDM: DcmFl, outDir: File, frmOfRefIndex: Int, planIndex: Int): Unit = {
     val dest = new File(outDir, "RTPLAN_" + rtplanDM.dateText + "_" + fmt(planIndex) + ".dcm")
     Trace.trace("Saving RTPLAN " + dest.getAbsolutePath)
     rtplanDM.copyTo(dest)
   }
 
-  private def saveRtimage(rtimageDM: DcmFl, outDir: File, frmOfRefIndex: Int, rtimageIndex: Int) = {
+  private def saveRtimage(rtimageDM: DcmFl, outDir: File, frmOfRefIndex: Int, rtimageIndex: Int): Unit = {
     val dest = new File(outDir, "RTIMAGE" + rtimageDM.dateText + "_" + fmt(rtimageIndex) + ".dcm")
     Trace.trace("Saving RTIMAGE " + dest.getAbsolutePath)
     rtimageDM.copyTo(dest)
   }
 
-  private def saveReg(regDM: DcmFl, outDir: File, frmOfRefIndex: Int, regIndex: Int) = {
+  private def saveReg(regDM: DcmFl, outDir: File, frmOfRefIndex: Int, regIndex: Int): Unit = {
     val dest = new File(outDir, "REG" + regDM.dateText + "_" + fmt(regIndex) + ".dcm")
     Trace.trace("Saving REG " + dest.getAbsolutePath)
     regDM.copyTo(dest)
   }
 
-  private def saveRtdose(rtdoseDM: DcmFl, outDir: File, frmOfRefIndex: Int, rtdoseIndex: Int) = {
+  private def saveRtdose(rtdoseDM: DcmFl, outDir: File, frmOfRefIndex: Int, rtdoseIndex: Int): Unit = {
     val dest = new File(outDir, "RTDOSE" + rtdoseDM.dateText + "_" + fmt(rtdoseIndex) + ".dcm")
     Trace.trace("Saving RTDOSE " + dest.getAbsolutePath)
     rtdoseDM.copyTo(dest)
   }
 
-  private def saveRtrecord(regDM: DcmFl, outDir: File, frmOfRefIndex: Int, rtrecordIndex: Int) = {
+  private def saveRtrecord(regDM: DcmFl, outDir: File, frmOfRefIndex: Int, rtrecordIndex: Int): Unit = {
     val dest = new File(outDir, "RTRECORD_" + regDM.dateText + "_" + fmt(rtrecordIndex) + ".dcm")
     Trace.trace("Saving RTRECORD " + dest.getAbsolutePath)
     regDM.copyTo(dest)
