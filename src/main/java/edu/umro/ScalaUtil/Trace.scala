@@ -206,7 +206,7 @@ object Trace {
          |<html lang="en">
          |<head>
          |    <meta charset="UTF-8">
-         |    <title>C3.js Line Chart Example</title>
+         |    <title>$name</title>
          |    <!-- C3.css -->
          |    <link href="https://cdnjs.cloudflare.com/ajax/libs/c3/0.7.20/c3.min.css" rel="stylesheet">
          |    <style>
@@ -215,7 +215,6 @@ object Trace {
          |            margin: 2em;
          |        }
          |        #chart {
-         |            max-width: 800px;
          |            margin: auto;
          |        }
          |    </style>
@@ -240,6 +239,14 @@ object Trace {
          |                    yData
          |                ],
          |                type: 'line'
+         |            },
+         |            point: { // enlarge point on hover
+         |              r: 0,
+         |              focus : {
+         |                expand: {
+         |                  r:3
+         |                }
+         |              }
          |            },
          |            axis: {
          |                x: {
